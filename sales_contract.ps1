@@ -3,7 +3,11 @@ Add-Type -AssemblyName System.Data.DataSetExtensions
 Add-Type -AssemblyName Microsoft.Office.Interop.Word
 Add-Type -AssemblyName System.Data
 
-. .\config.ps1
+# Set the absolute path to your config.ps1 script
+$configPath = "D:\Programming\PowerShell\Sales Contract\config.ps1"
+# Dot source the config script
+. $configPath
+
 
 
 # Show a message box with the desired message
@@ -95,6 +99,9 @@ if ([string]::IsNullOrWhiteSpace($pdfFilePath)) {
 
 
      # Regex to extract the relevant section
+
+     $regex0 = if ($textContent -match "Quotation[\s\S]+?Quoted") { $matches[0] } else { "" }
+
      $regex1 = if ($textContent -match "Item Description[\s\S]+?Final Quote") { $matches[0] } else { "" }
 
      # Removing pricing details to create $regex2
@@ -124,7 +131,44 @@ if ($textContent -match $shipping) {
 
 
 
+# Create the form
+$form = New-Object System.Windows.Forms.Form
+$form.Text = "Please Select Margin"
+$form.Size = New-Object System.Drawing.Size(300, 200)
+$form.StartPosition = "CenterScreen"
+
+# Add the 26% button
+$button26 = New-Object System.Windows.Forms.Button
+$button26.Location = New-Object System.Drawing.Point(30, 50)
+$button26.Size = New-Object System.Drawing.Size(100, 23)
+$button26.Text = "26%"
+$button26.Add_Click({
+    $script:marginSelection = 0.74
+    $form.Close()
+})
+$form.Controls.Add($button26)
+
+# Add the 35% button
+$button35 = New-Object System.Windows.Forms.Button
+$button35.Location = New-Object System.Drawing.Point(150, 50)
+$button35.Size = New-Object System.Drawing.Size(100, 23)
+$button35.Text = "35%"
+$button35.Add_Click({
+    $script:marginSelection = 0.65
+    $form.Close()
+})
+$form.Controls.Add($button35)
+
+# Show the form
+$form.Add_Shown({$form.Activate()})
+$form.ShowDialog() | Out-Null
+
+
 # Line by line capture for descriptions, quantity, and prices
+
+
+$customerInfo = [regex]::Matches($regex0, "^.*", [System.Text.RegularExpressions.RegexOptions]::IgnoreCase -bor [System.Text.RegularExpressions.RegexOptions]::Multiline).Value
+
 $sitesStates = [regex]::Matches($regex1, "^.*", [System.Text.RegularExpressions.RegexOptions]::IgnoreCase -bor [System.Text.RegularExpressions.RegexOptions]::Multiline).Value
 # Print the $sitesStates variable to the terminal
 #Write-Host "Sites States:"
@@ -138,6 +182,10 @@ $sitesStatesRegex2 = [regex]::Matches($regex2, "^.*", [System.Text.RegularExpres
 
 
 # Creating Data Tables
+
+$customerInfoDT = New-Object System.Data.DataTable
+$customerInfoDT.Columns.Add("Column1", [string])
+
 $sitesStatesDT = New-Object System.Data.DataTable
 $sitesStatesDT.Columns.Add("Column1", [string])
 
@@ -167,8 +215,45 @@ $dtPrices2.Columns.Add("MRC Total", [string])
 
 
 
+#building customerInfoDT datatable
+$rowCount = $customerInfo.Count
+$counter = 0
+
+while ($counter -le $rowCount - 1) {
+    # Fetch the current line based on $counter
+    $line = $customerInfo[$counter]
+    
+    # Check if the line is not just whitespace or empty and does not contain "Quotation" or "Billing"
+    if (-not [string]::IsNullOrWhiteSpace($line) -and $line -notmatch "Quotation" -and $line -notmatch "Billing") {
+        # If the line has content and does not contain "Quotation" or "Billing", add it to the DataTable
+        $customerInfoDT.Rows.Add($line)
+    }
+    
+    # Increment counter to move to the next line
+    $counter++
+}
 
 
+# Loop through each row in the DataTable
+foreach ($row in $customerInfoDT.Rows) {
+    # Get the current value of Column1
+    $currentText = $row["Column1"]
+    
+    # Define a regex pattern that matches the specified keywords (with possible multiple whitespaces between words) and any text following them
+    $pattern = "(Quote\s+No.*|Quote\s+Date.*|Valid\s+Until.*|Payment\s+Term.*)|Quoted|$telcoSales"
+
+    # Replace matched patterns with an empty string, effectively removing them
+    $updatedText = $currentText -replace $pattern, ""
+
+    # Update the row's text with the modified value
+    $row["Column1"] = $updatedText.Trim() # .Trim() is used to remove any leading or trailing whitespace that might be left
+}
+
+
+
+
+
+#building sitesStatesDT
 $rowCount = $sitesStatesRegex2.Count
 $counter = 0
 
@@ -176,6 +261,7 @@ while ($counter -le $rowCount - 1) {
     $sitesStatesDT.Rows.Add($sitesStatesRegex2[$counter])
     $counter++
 }
+
 
 # Create a new DataTable for filtered results
 $sitesStatesFiltered = New-Object System.Data.DataTable
@@ -302,7 +388,7 @@ $dtPrices1 = $dtPrices.Copy()
 # Doing math for the Totals in Prices
 foreach ($currentRow in $dtPrices1.Rows) {
     # Perform the calculation and division as per the original logic
-    $value = [double]$currentRow[3] / 0.74  #adding 26% margin
+    $value = [double]$currentRow[3] / $marginSelection 
     $quantity = [int]$currentRow[0]
     $result = [Math]::Round($value / $quantity, 2)
 
@@ -382,7 +468,7 @@ for ($i = 0; $i -lt 2; $i++) {
 # Adding the row with specific data in cells [2] and [3]
 $shippingRow = $dtJoined3.NewRow()
 $shippingRow[2] = "Shipping Costs of AT&T Equipment, One Time Charge - (OTC)"
-$shippingRow[3] = $shipping
+$shippingRow[3] = '$' + $price
 $dtJoined3.Rows.Add($shippingRow)
 
 
@@ -773,8 +859,8 @@ if ($findSKU.Execute($findTextSKU)) {
 
 
 
-# Placeholder text for SKU table
-$findTextSKU1 = "<<sitesStatesFinal>>"
+
+$findTextSKU1 = "<<customerInfoDT>>"
 $findSKU1 = $templateDoc.Content.Find
 $findSKU1.ClearFormatting()
 
@@ -782,8 +868,8 @@ if ($findSKU1.Execute($findTextSKU1)) {
     $dataTableRangeSKU1 = $findSKU1.Parent
     $dataTableRangeSKU1.Select()
 
-    $rowCountSKU1 = $sitesStatesFinal.Rows.Count
-    $columnCountSKU1 = $sitesStatesFinal.Columns.Count
+    $rowCountSKU1 = $customerInfoDT.Rows.Count
+    $columnCountSKU1 = $customerInfoDT.Columns.Count
     $wordTableSKU1 = $templateDoc.Tables.Add($dataTableRangeSKU1, $rowCountSKU1 + 1, $columnCountSKU1)
 
     # Center the entire table horizontally
@@ -801,7 +887,7 @@ if ($findSKU1.Execute($findTextSKU1)) {
 
     # Add column headers for SKU table
     for ($columnIndexSKU1 = 0; $columnIndexSKU1 -lt $columnCountSKU1; $columnIndexSKU1++) {
-        $headerTextSKU1 = [System.Convert]::ToString($sitesStatesFinal.Columns[$columnIndexSKU1].ColumnName)
+        $headerTextSKU1 = [System.Convert]::ToString($customerInfoDT.Columns[$columnIndexSKU1].ColumnName)
         $wordTableSKU1.Cell(1, $columnIndexSKU1 + 1).Range.Text = $headerTextSKU1
     }
 
@@ -809,7 +895,7 @@ if ($findSKU1.Execute($findTextSKU1)) {
     for ($rowIndexSKU1 = 0; $rowIndexSKU1 -lt $rowCountSKU1; $rowIndexSKU1++) {
         for ($columnIndexSKU1 = 0; $columnIndexSKU1 -lt $columnCountSKU1; $columnIndexSKU1++) {
             if ($wordTableSKU1.Cell($rowIndexSKU1 + 2, $columnIndexSKU1 + 1)) {
-                $cellDataSKU1 = $sitesStatesFinal.Rows[$rowIndexSKU1][$columnIndexSKU1] -as [String]
+                $cellDataSKU1 = $customerInfoDT.Rows[$rowIndexSKU1][$columnIndexSKU1] -as [String]
                 $wordTableSKU1.Cell($rowIndexSKU1 + 2, $columnIndexSKU1 + 1).Range.Text = $cellDataSKU1
             }
         }
@@ -832,243 +918,9 @@ if ($findSKU1.Execute($findTextSKU1)) {
 }
 
 
-# Placeholder text for SKU table
-$findTextSKU1 = "<<dtPrices>>"
-$findSKU1 = $templateDoc.Content.Find
-$findSKU1.ClearFormatting()
 
-if ($findSKU1.Execute($findTextSKU1)) {
-    $dataTableRangeSKU1 = $findSKU1.Parent
-    $dataTableRangeSKU1.Select()
+#Placeholder text for SKU table
 
-    $rowCountSKU1 = $dtPrices.Rows.Count
-    $columnCountSKU1 = $dtPrices.Columns.Count
-    $wordTableSKU1 = $templateDoc.Tables.Add($dataTableRangeSKU1, $rowCountSKU1 + 1, $columnCountSKU1)
-
-    # Center the entire table horizontally
-    $wordTableSKU1.Rows.Alignment = [Microsoft.Office.Interop.Word.WdRowAlignment]::wdAlignRowCenter
-
-    # Set the cell alignment to center
-    foreach ($cellSKU1 in $wordTableSKU1.Range.Cells) {
-        $cellSKU1.Range.ParagraphFormat.Alignment = [Microsoft.Office.Interop.Word.WdParagraphAlignment]::wdAlignParagraphCenter
-        $cellSKU1.VerticalAlignment = [Microsoft.Office.Interop.Word.WdCellVerticalAlignment]::wdCellAlignVerticalCenter
-
-        # Set the font and size
-        $cellSKU1.Range.Font.Name = "Arial"
-        $cellSKU1.Range.Font.Size = 8
-    }
-
-    # Add column headers for SKU table
-    for ($columnIndexSKU1 = 0; $columnIndexSKU1 -lt $columnCountSKU1; $columnIndexSKU1++) {
-        $headerTextSKU1 = [System.Convert]::ToString($dtPrices.Columns[$columnIndexSKU1].ColumnName)
-        $wordTableSKU1.Cell(1, $columnIndexSKU1 + 1).Range.Text = $headerTextSKU1
-    }
-
-    # Add data rows for SKU table
-    for ($rowIndexSKU1 = 0; $rowIndexSKU1 -lt $rowCountSKU1; $rowIndexSKU1++) {
-        for ($columnIndexSKU1 = 0; $columnIndexSKU1 -lt $columnCountSKU1; $columnIndexSKU1++) {
-            if ($wordTableSKU1.Cell($rowIndexSKU1 + 2, $columnIndexSKU1 + 1)) {
-                $cellDataSKU1 = $dtPrices.Rows[$rowIndexSKU1][$columnIndexSKU1] -as [String]
-                $wordTableSKU1.Cell($rowIndexSKU1 + 2, $columnIndexSKU1 + 1).Range.Text = $cellDataSKU1
-            }
-        }
-    }
-
-    # Set the table's border style
-    $borders = @(
-        $wordTableSKU1.Borders.Item([Microsoft.Office.Interop.Word.WdBorderType]::wdBorderLeft),
-        $wordTableSKU1.Borders.Item([Microsoft.Office.Interop.Word.WdBorderType]::wdBorderRight),
-        $wordTableSKU1.Borders.Item([Microsoft.Office.Interop.Word.WdBorderType]::wdBorderTop),
-        $wordTableSKU1.Borders.Item([Microsoft.Office.Interop.Word.WdBorderType]::wdBorderBottom),
-        $wordTableSKU1.Borders.Item([Microsoft.Office.Interop.Word.WdBorderType]::wdBorderHorizontal),
-        $wordTableSKU1.Borders.Item([Microsoft.Office.Interop.Word.WdBorderType]::wdBorderVertical)
-    )
-
-    foreach ($border in $borders) {
-        $border.LineStyle = [Microsoft.Office.Interop.Word.WdLineStyle]::wdLineStyleSingle
-        $border.Color = [Microsoft.Office.Interop.Word.WdColor]::wdColorBlack
-    }
-}
-
-
-# Placeholder text for SKU table
-$findTextSKU1 = "<<dtPrices1>>"
-$findSKU1 = $templateDoc.Content.Find
-$findSKU1.ClearFormatting()
-
-if ($findSKU1.Execute($findTextSKU1)) {
-    $dataTableRangeSKU1 = $findSKU1.Parent
-    $dataTableRangeSKU1.Select()
-
-    $rowCountSKU1 = $dtPrices1.Rows.Count
-    $columnCountSKU1 = $dtPrices1.Columns.Count
-    $wordTableSKU1 = $templateDoc.Tables.Add($dataTableRangeSKU1, $rowCountSKU1 + 1, $columnCountSKU1)
-
-    # Center the entire table horizontally
-    $wordTableSKU1.Rows.Alignment = [Microsoft.Office.Interop.Word.WdRowAlignment]::wdAlignRowCenter
-
-    # Set the cell alignment to center
-    foreach ($cellSKU1 in $wordTableSKU1.Range.Cells) {
-        $cellSKU1.Range.ParagraphFormat.Alignment = [Microsoft.Office.Interop.Word.WdParagraphAlignment]::wdAlignParagraphCenter
-        $cellSKU1.VerticalAlignment = [Microsoft.Office.Interop.Word.WdCellVerticalAlignment]::wdCellAlignVerticalCenter
-
-        # Set the font and size
-        $cellSKU1.Range.Font.Name = "Arial"
-        $cellSKU1.Range.Font.Size = 8
-    }
-
-    # Add column headers for SKU table
-    for ($columnIndexSKU1 = 0; $columnIndexSKU1 -lt $columnCountSKU1; $columnIndexSKU1++) {
-        $headerTextSKU1 = [System.Convert]::ToString($dtPrices1.Columns[$columnIndexSKU1].ColumnName)
-        $wordTableSKU1.Cell(1, $columnIndexSKU1 + 1).Range.Text = $headerTextSKU1
-    }
-
-    # Add data rows for SKU table
-    for ($rowIndexSKU1 = 0; $rowIndexSKU1 -lt $rowCountSKU1; $rowIndexSKU1++) {
-        for ($columnIndexSKU1 = 0; $columnIndexSKU1 -lt $columnCountSKU1; $columnIndexSKU1++) {
-            if ($wordTableSKU1.Cell($rowIndexSKU1 + 2, $columnIndexSKU1 + 1)) {
-                $cellDataSKU1 = $dtPrices1.Rows[$rowIndexSKU1][$columnIndexSKU1] -as [String]
-                $wordTableSKU1.Cell($rowIndexSKU1 + 2, $columnIndexSKU1 + 1).Range.Text = $cellDataSKU1
-            }
-        }
-    }
-
-    # Set the table's border style
-    $borders = @(
-        $wordTableSKU1.Borders.Item([Microsoft.Office.Interop.Word.WdBorderType]::wdBorderLeft),
-        $wordTableSKU1.Borders.Item([Microsoft.Office.Interop.Word.WdBorderType]::wdBorderRight),
-        $wordTableSKU1.Borders.Item([Microsoft.Office.Interop.Word.WdBorderType]::wdBorderTop),
-        $wordTableSKU1.Borders.Item([Microsoft.Office.Interop.Word.WdBorderType]::wdBorderBottom),
-        $wordTableSKU1.Borders.Item([Microsoft.Office.Interop.Word.WdBorderType]::wdBorderHorizontal),
-        $wordTableSKU1.Borders.Item([Microsoft.Office.Interop.Word.WdBorderType]::wdBorderVertical)
-    )
-
-    foreach ($border in $borders) {
-        $border.LineStyle = [Microsoft.Office.Interop.Word.WdLineStyle]::wdLineStyleSingle
-        $border.Color = [Microsoft.Office.Interop.Word.WdColor]::wdColorBlack
-    }
-}
-
-
-# Placeholder text for SKU table
-$findTextSKU1 = "<<dtPrices2>>"
-$findSKU1 = $templateDoc.Content.Find
-$findSKU1.ClearFormatting()
-
-if ($findSKU1.Execute($findTextSKU1)) {
-    $dataTableRangeSKU1 = $findSKU1.Parent
-    $dataTableRangeSKU1.Select()
-
-    $rowCountSKU1 = $dtPrices2.Rows.Count
-    $columnCountSKU1 = $dtPrices2.Columns.Count
-    $wordTableSKU1 = $templateDoc.Tables.Add($dataTableRangeSKU1, $rowCountSKU1 + 1, $columnCountSKU1)
-
-    # Center the entire table horizontally
-    $wordTableSKU1.Rows.Alignment = [Microsoft.Office.Interop.Word.WdRowAlignment]::wdAlignRowCenter
-
-    # Set the cell alignment to center
-    foreach ($cellSKU1 in $wordTableSKU1.Range.Cells) {
-        $cellSKU1.Range.ParagraphFormat.Alignment = [Microsoft.Office.Interop.Word.WdParagraphAlignment]::wdAlignParagraphCenter
-        $cellSKU1.VerticalAlignment = [Microsoft.Office.Interop.Word.WdCellVerticalAlignment]::wdCellAlignVerticalCenter
-
-        # Set the font and size
-        $cellSKU1.Range.Font.Name = "Arial"
-        $cellSKU1.Range.Font.Size = 8
-    }
-
-    # Add column headers for SKU table
-    for ($columnIndexSKU1 = 0; $columnIndexSKU1 -lt $columnCountSKU1; $columnIndexSKU1++) {
-        $headerTextSKU1 = [System.Convert]::ToString($dtPrices2.Columns[$columnIndexSKU1].ColumnName)
-        $wordTableSKU1.Cell(1, $columnIndexSKU1 + 1).Range.Text = $headerTextSKU1
-    }
-
-    # Add data rows for SKU table
-    for ($rowIndexSKU1 = 0; $rowIndexSKU1 -lt $rowCountSKU1; $rowIndexSKU1++) {
-        for ($columnIndexSKU1 = 0; $columnIndexSKU1 -lt $columnCountSKU1; $columnIndexSKU1++) {
-            if ($wordTableSKU1.Cell($rowIndexSKU1 + 2, $columnIndexSKU1 + 1)) {
-                $cellDataSKU1 = $dtPrices2.Rows[$rowIndexSKU1][$columnIndexSKU1] -as [String]
-                $wordTableSKU1.Cell($rowIndexSKU1 + 2, $columnIndexSKU1 + 1).Range.Text = $cellDataSKU1
-            }
-        }
-    }
-
-    # Set the table's border style
-    $borders = @(
-        $wordTableSKU1.Borders.Item([Microsoft.Office.Interop.Word.WdBorderType]::wdBorderLeft),
-        $wordTableSKU1.Borders.Item([Microsoft.Office.Interop.Word.WdBorderType]::wdBorderRight),
-        $wordTableSKU1.Borders.Item([Microsoft.Office.Interop.Word.WdBorderType]::wdBorderTop),
-        $wordTableSKU1.Borders.Item([Microsoft.Office.Interop.Word.WdBorderType]::wdBorderBottom),
-        $wordTableSKU1.Borders.Item([Microsoft.Office.Interop.Word.WdBorderType]::wdBorderHorizontal),
-        $wordTableSKU1.Borders.Item([Microsoft.Office.Interop.Word.WdBorderType]::wdBorderVertical)
-    )
-
-    foreach ($border in $borders) {
-        $border.LineStyle = [Microsoft.Office.Interop.Word.WdLineStyle]::wdLineStyleSingle
-        $border.Color = [Microsoft.Office.Interop.Word.WdColor]::wdColorBlack
-    }
-}
-
-
-Placeholder text for SKU table
-$findTextSKU1 = "<<sitesStatesFiltered>>"
-$findSKU1 = $templateDoc.Content.Find
-$findSKU1.ClearFormatting()
-
-if ($findSKU1.Execute($findTextSKU1)) {
-    $dataTableRangeSKU1 = $findSKU1.Parent
-    $dataTableRangeSKU1.Select()
-
-    $rowCountSKU1 = $sitesStatesFiltered.Rows.Count
-    $columnCountSKU1 = $sitesStatesFiltered.Columns.Count
-    $wordTableSKU1 = $templateDoc.Tables.Add($dataTableRangeSKU1, $rowCountSKU1 + 1, $columnCountSKU1)
-
-    # Center the entire table horizontally
-    $wordTableSKU1.Rows.Alignment = [Microsoft.Office.Interop.Word.WdRowAlignment]::wdAlignRowCenter
-
-    # Set the cell alignment to center
-    foreach ($cellSKU1 in $wordTableSKU1.Range.Cells) {
-        $cellSKU1.Range.ParagraphFormat.Alignment = [Microsoft.Office.Interop.Word.WdParagraphAlignment]::wdAlignParagraphCenter
-        $cellSKU1.VerticalAlignment = [Microsoft.Office.Interop.Word.WdCellVerticalAlignment]::wdCellAlignVerticalCenter
-
-        # Set the font and size
-        $cellSKU1.Range.Font.Name = "Arial"
-        $cellSKU1.Range.Font.Size = 8
-    }
-
-    # Add column headers for SKU table
-    for ($columnIndexSKU1 = 0; $columnIndexSKU1 -lt $columnCountSKU1; $columnIndexSKU1++) {
-        $headerTextSKU1 = [System.Convert]::ToString($sitesStatesFiltered.Columns[$columnIndexSKU1].ColumnName)
-        $wordTableSKU1.Cell(1, $columnIndexSKU1 + 1).Range.Text = $headerTextSKU1
-    }
-
-    # Add data rows for SKU table
-    for ($rowIndexSKU1 = 0; $rowIndexSKU1 -lt $rowCountSKU1; $rowIndexSKU1++) {
-        for ($columnIndexSKU1 = 0; $columnIndexSKU1 -lt $columnCountSKU1; $columnIndexSKU1++) {
-            if ($wordTableSKU1.Cell($rowIndexSKU1 + 2, $columnIndexSKU1 + 1)) {
-                $cellDataSKU1 = $sitesStatesFiltered.Rows[$rowIndexSKU1][$columnIndexSKU1] -as [String]
-                $wordTableSKU1.Cell($rowIndexSKU1 + 2, $columnIndexSKU1 + 1).Range.Text = $cellDataSKU1
-            }
-        }
-    }
-
-    # Set the table's border style
-    $borders = @(
-        $wordTableSKU1.Borders.Item([Microsoft.Office.Interop.Word.WdBorderType]::wdBorderLeft),
-        $wordTableSKU1.Borders.Item([Microsoft.Office.Interop.Word.WdBorderType]::wdBorderRight),
-        $wordTableSKU1.Borders.Item([Microsoft.Office.Interop.Word.WdBorderType]::wdBorderTop),
-        $wordTableSKU1.Borders.Item([Microsoft.Office.Interop.Word.WdBorderType]::wdBorderBottom),
-        $wordTableSKU1.Borders.Item([Microsoft.Office.Interop.Word.WdBorderType]::wdBorderHorizontal),
-        $wordTableSKU1.Borders.Item([Microsoft.Office.Interop.Word.WdBorderType]::wdBorderVertical)
-    )
-
-    foreach ($border in $borders) {
-        $border.LineStyle = [Microsoft.Office.Interop.Word.WdLineStyle]::wdLineStyleSingle
-        $border.Color = [Microsoft.Office.Interop.Word.WdColor]::wdColorBlack
-    }
-}
-
-
-Placeholder text for SKU table
 $findTextSKU1 = "<<sitesStatesSKU>>"
 $findSKU1 = $templateDoc.Content.Find
 $findSKU1.ClearFormatting()
