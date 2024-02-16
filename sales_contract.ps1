@@ -146,11 +146,13 @@ $dtPrices.Columns.Add("MRC", [decimal])
 
 $dtJoined3 = New-Object System.Data.DataTable
 $dtJoined3.Columns.Add("Description", [string])
+$dtJoined3.Columns.Add("Site Number", [string])
 $dtJoined3.Columns.Add("Item Cost", [string])
 $dtJoined3.Columns.Add("Quantity", [string])
 $dtJoined3.Columns.Add("MRC", [string])
 
 $dtPrices2 = New-Object System.Data.DataTable
+#$dtPrices2.Columns.Add("Site Number", [string])
 $dtPrices2.Columns.Add("MRC Unit Price", [string])
 $dtPrices2.Columns.Add("Units", [double])
 $dtPrices2.Columns.Add("MRC Total", [string])
@@ -322,6 +324,8 @@ for ($i = $dtPrices.Rows.Count - 1; $i -ge 0; $i--) {
     }
 }
 
+
+
 # Create a new DataTable and copy the structure and data of dtPrices
 $dtPrices1 = New-Object System.Data.DataTable
 $dtPrices1 = $dtPrices.Clone()
@@ -348,6 +352,20 @@ foreach ($currentRow in $dtPrices1.Rows) {
     $newRow.ItemArray = $newRowData
     $dtPrices2.Rows.Add($newRow)
 }
+
+# Add a new column named "Site Number" to dtPrices2
+$siteNumberColumn = New-Object System.Data.DataColumn "Site Number", ([string])
+$dtPrices2.Columns.Add($siteNumberColumn)
+$siteNumberColumn.SetOrdinal(0) # Move the "Site Number" column to be the first column
+
+# Fill all cells in the "Site Number" column with the number "1"
+foreach ($row in $dtPrices2.Rows) {
+    $row["Site Number"] = "1"
+}
+
+
+
+
 
 
 # Inserting a blank row at the top of dtPrices2
@@ -394,12 +412,12 @@ $mrcSUM = [Math]::Round($mrcSUM, 2).ToString()
 
 # Adding a new row to 'dtJoined3'
 $newRowForTotal = $dtJoined3.NewRow()
-$newRowForTotal[3] = "Total MRC: " + '$' + $mrcSUM # Replace 3 with the actual index or column name
+$newRowForTotal[4] = "Total MRC: " + '$' + $mrcSUM # Replace 3 with the actual index or column name
 $dtJoined3.Rows.Add($newRowForTotal)
 
 # Adding the first special row
 $newRow = $dtJoined3.NewRow()
-$newRow[3] = "Total MRC for MPP: N/A"
+$newRow[4] = "Total MRC for MPP: N/A"
 $dtJoined3.Rows.Add($newRow)
 
 # Adding two entirely blank rows
@@ -411,8 +429,8 @@ for ($i = 0; $i -lt 2; $i++) {
 
 # Adding the row with specific data in cells [2] and [3]
 $shippingRow = $dtJoined3.NewRow()
-$shippingRow[2] = "Shipping Costs of AT&T Equipment, One Time Charge - (OTC)"
-$shippingRow[3] = '$' + $price
+$shippingRow[3] = "Shipping Costs of AT&T Equipment, One Time Charge - (OTC)"
+$shippingRow[4] = '$' + $price
 $dtJoined3.Rows.Add($shippingRow)
 
 
@@ -421,6 +439,8 @@ $initialRowData_final = @(" ", " ", " ", " ") # Adjust as per your initial data 
 $initialRow_final = $dtJoined3.NewRow()
 $initialRow_final.ItemArray = $initialRowData_final
 $dtJoined3.Rows.InsertAt($initialRow_final, 0)
+
+
 
 
 
@@ -518,14 +538,24 @@ for ($i = 0; $i -lt $dtSKU.Rows.Count; $i++) {
 
 #Variables from customer contact regex extraction
 
-$customerContactName = customerInfoDT.Rows[3][0]
-$customerEmail = customerInfoDT.Rows[5][0]
-$customerStreetAddress = customerInfoDT.Rows[1][0]
-$customerCityStateZip = customerInfoDT.Rows[2][0]
-$customerPhone = customerInfoDT.Rows[4][0]
+$customerContactName = $customerInfoDT.Rows[3][0]
+$customerEmail = $customerInfoDT.Rows[5][0]
+$customerStreetAddress = $customerInfoDT.Rows[1][0]
+$customerCityStateZip = $customerInfoDT.Rows[2][0]
+$customerPhone = $customerInfoDT.Rows[4][0]
 
 
+# Prepare the message to display
+$message = @"
+Contact Name: $customerContactName
+Email: $customerEmail
+Street Address: $customerStreetAddress
+City, State, Zip: $customerCityStateZip
+Phone: $customerPhone
+"@
 
+# Create a MessageBox to show the information
+[System.Windows.Forms.MessageBox]::Show($message, "Customer Information", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Information)
 
 # Load Word COM object
 $word = New-Object -ComObject Word.Application
