@@ -11,65 +11,6 @@ $configPath = "D:\Programming\PowerShell\Sales Contract\config.ps1"
 
 
 # Show a message box with the desired message
-[Windows.Forms.MessageBox]::Show('SELECT THE COVER PAGE', '')
-
-
-$FileBrowser = New-Object System.Windows.Forms.OpenFileDialog -Property @{
-    InitialDirectory = [Environment]::GetFolderPath('Desktop')
-    Title = "Select the cover page"
-    Filter = "Word Documents (*.docx;*.doc)|*.docx;*.doc"
-}
-
-$word = New-Object -ComObject Word.Application
-$word.Visible = $true
-
-if ($FileBrowser.ShowDialog() -eq 'OK') {
-    $wordDocumentPath = $FileBrowser.FileName
-    $doc = $word.Documents.Open($wordDocumentPath)
-
-    if ($doc.Tables.Count -ge 1) {
-        $table = $doc.Tables.Item(1)
-        $coverPage_Table = New-Object System.Data.DataTable
-
-        # Copy the table
-        $table.Range.Copy()
-        Write-Host "Table copied to clipboard."
-
-        for ($rowIndex = 1; $rowIndex -le $table.Rows.Count; $rowIndex++) {
-            $row = $table.Rows.Item($rowIndex)
-            $dataRow = $coverPage_Table.NewRow()
-
-            for ($colIndex = 1; $colIndex -le $row.Cells.Count; $colIndex++) {
-                $cell = $row.Cells.Item($colIndex)
-                $cellText = $cell.Range.Text.TrimEnd("`r", "`a")
-
-                if ($rowIndex -eq 1) {
-                    $coverPage_Table.Columns.Add($cellText)
-                } else {
-                    $dataRow[$colIndex - 1] = $cellText
-                }
-            }
-
-            if ($rowIndex -gt 1) {
-                $coverPage_Table.Rows.Add($dataRow)
-            }
-        }
-
-        # Uncomment to print the DataTable to the console
-        #foreach ($row in $coverPage_Table.Rows) {
-        #    $row.ItemArray -join ", " | Write-Host
-        #}
-    }
-
-    $doc.Close([Microsoft.Office.Interop.Word.WdSaveOptions]::wdDoNotSaveChanges)
-    $word.Quit()
-    [System.Runtime.InteropServices.Marshal]::ReleaseComObject($word)
-}
-
-
-
-
-# Show a message box with the desired message
 [Windows.Forms.MessageBox]::Show('SELECT THE PDF QUOTE', '')
 
 function Select-PdfFile {
@@ -82,7 +23,7 @@ function Select-PdfFile {
 
 
 
-$pdfToTextPath = "C:\Users\seanc\Downloads\xpdf-tools-win-4.04\xpdf-tools-win-4.04\bin64\pdftotext.exe"
+$pdfToTextPath = "C:\Program Files\xpdf-tools-win-4.04\xpdf-tools-win-4.04\bin64\pdftotext.exe"
 $pdfFilePath = Select-PdfFile
 
 
@@ -95,7 +36,7 @@ if ([string]::IsNullOrWhiteSpace($pdfFilePath)) {
     if (Test-Path $outputTxtPath) {
         $textContent = Get-Content $outputTxtPath -Raw
 
-        Write-Host $textContent
+        #Write-Host $textContent
 
 
      # Regex to extract the relevant section
@@ -169,7 +110,7 @@ $form.ShowDialog() | Out-Null
 
 $customerInfo = [regex]::Matches($regex0, "^.*", [System.Text.RegularExpressions.RegexOptions]::IgnoreCase -bor [System.Text.RegularExpressions.RegexOptions]::Multiline).Value
 
-$sitesStates = [regex]::Matches($regex1, "^.*", [System.Text.RegularExpressions.RegexOptions]::IgnoreCase -bor [System.Text.RegularExpressions.RegexOptions]::Multiline).Value
+#$sitesStates = [regex]::Matches($regex1, "^.*", [System.Text.RegularExpressions.RegexOptions]::IgnoreCase -bor [System.Text.RegularExpressions.RegexOptions]::Multiline).Value
 # Print the $sitesStates variable to the terminal
 #Write-Host "Sites States:"
 #$sitesStates | ForEach-Object { Write-Host $_ }
@@ -183,6 +124,7 @@ $sitesStatesRegex2 = [regex]::Matches($regex2, "^.*", [System.Text.RegularExpres
 
 # Creating Data Tables
 
+#stores customer information from the sales quote 
 $customerInfoDT = New-Object System.Data.DataTable
 $customerInfoDT.Columns.Add("Column1", [string])
 
@@ -254,6 +196,8 @@ foreach ($row in $customerInfoDT.Rows) {
 
 
 #building sitesStatesDT
+
+#TODO - Use simliar approach you used for customerInfoDT so we don't have to an extra step of datatable filtering
 $rowCount = $sitesStatesRegex2.Count
 $counter = 0
 
@@ -572,61 +516,13 @@ for ($i = 0; $i -lt $dtSKU.Rows.Count; $i++) {
 
 
 
+#Variables from customer contact regex extraction
 
-
-
-
-#TESTING - DELETE THESE
-# Assuming $dataTable is your DataTable
-$rowCount = $sitesStatesDT.Rows.Count
-
-# Display the row count
-Write-Host "sitesStatesDT has $rowCount rows."
-
-
-
-
-#REGEX FOR VARIABLES
-
-# Customer Variables
-$customerName = $coverPage_Table.Rows[0][0].ToString()
-
-# Customer Address
-$customerAddress = $coverPage_Table.Rows[2][0].ToString()
-
-# Customer Street
-$customerStreet_edit = [System.Text.RegularExpressions.Regex]::Match($customerAddress, "Address:(.*?)City").Value.Trim()
-$customerStreet = [System.Text.RegularExpressions.Regex]::Replace($customerStreet_edit, "Address:|City", "")
-
-# Customer City
-$customerCity_edit = [System.Text.RegularExpressions.Regex]::Match($customerAddress, "City:(.*?)State").Value.Trim()
-$customerCity = [System.Text.RegularExpressions.Regex]::Replace($customerCity_edit, "City:|State", "")
-
-# Customer State
-$customerState = [System.Text.RegularExpressions.Regex]::Match($customerAddress, "AL|AK|AZ|AR|CA|CO|CT|DE|FL|GA|HI|ID|IL|IN|IA|KS|KY|LA|ME|MD|MA|MI|MN|MS|MO|MT|NE|NV|NH|NJ|NM|NY|NC|ND|OH|OK|OR|PA|RI|SC|SD|TN|TX|UT|VT|VA|WA|WV|WI|WY").Value.Trim()
-
-# Customer Zip Code
-$customerZip = [System.Text.RegularExpressions.Regex]::Match($customerAddress, "\d{5}(-\d{4})?").Value.Trim()
-
-# Customer Contact
-$customerContact = $coverPage_Table.Rows[4][0].ToString()
-
-# Customer Contact Name
-$customerContactName_edit = [System.Text.RegularExpressions.Regex]::Match($customerContact, "Name:(.*?)Title").Value.Trim()
-$customerContactName = [System.Text.RegularExpressions.Regex]::Replace($customerContactName_edit, "Name:|Title", "")
-
-# Customer Title
-$customerTitle_edit = [System.Text.RegularExpressions.Regex]::Match($customerContact, "Title:(.*?)Telephone").Value.Trim()
-$customerTitle = [System.Text.RegularExpressions.Regex]::Replace($customerTitle_edit, "Title:|Telephone", "")
-
-# Customer Phone
-$customerPhone_edit = [System.Text.RegularExpressions.Regex]::Match($customerContact, "Telephone:(.*?)Fax").Value.Trim()
-$customerPhone = [System.Text.RegularExpressions.Regex]::Replace($customerPhone_edit, "Telephone:|Fax", "")
-
-# Customer Email
-$customerEmail = [System.Text.RegularExpressions.Regex]::Match($customerContact, "(?("")(""[^""]+?""@)|(([0-9a-zA-Z]((\.(?!\.))|[-!#$%&'*+/=?^_`{|}~\w])*)(?<=[0-9a-zA-Z])@))" + "((\[(\d{1,3}\.){3}\d{1,3}\])|(([0-9a-zA-Z][-0-9a-zA-Z]*[0-9a-zA-Z]*\.)+[a-zA-Z0-9][\-a-zA-Z0-9]{0,22}[a-zA-Z0-9]))").Value.Trim()
-
-# ...and so on for the remaining variables
+$customerContactName = customerInfoDT.Rows[3][0]
+$customerEmail = customerInfoDT.Rows[5][0]
+$customerStreetAddress = customerInfoDT.Rows[1][0]
+$customerCityStateZip = customerInfoDT.Rows[2][0]
+$customerPhone = customerInfoDT.Rows[4][0]
 
 
 
@@ -670,21 +566,6 @@ if ($find.Execute($findText)) {
 }
 
 
-# Placeholder text to find
-$findText = "<<customer title>>"
-
-# Access the Find object
-$find = $templateDoc.Content.Find
-$find.ClearFormatting()
-
-# Check if the placeholder text is found in the document
-if ($find.Execute($findText)) {
-    # Get the range where the text was found
-    $textRange = $find.Parent
-
-    # Replace the found text with the variable content
-    $textRange.Text = $customerTitle
-}
 
 # Convert the array of integers into a string
 $indexArrayString = $indexArray1 -join ", "
@@ -986,71 +867,59 @@ if ($findSKU1.Execute($findTextSKU1)) {
 # Assuming $word is already a Word application object and $templateDoc is the document
 
 #INSERTING THE COVER PAGE TABLE AND FORMATTING IT
-$placeholderRange = $templateDoc.Content
-$findText = "<<coverPage>>"
+# Assuming $templateDoc is your Word document object
+$wordTable = $templateDoc.Tables[1]
 
-$find = $placeholderRange.Find
-$find.ClearFormatting()
+# Specific cells to format
+$specificCells = @(
+    [Tuple]::Create(2,1), [Tuple]::Create(2,2), 
+    [Tuple]::Create(4,1), [Tuple]::Create(4,2), 
+    [Tuple]::Create(6,1), [Tuple]::Create(6,2), 
+    [Tuple]::Create(8,1), [Tuple]::Create(8,2)
+)
 
-if ($find.Execute($findText)) {
-    # Set the range to the end of the found text
-    $placeholderRange = $find.Parent
-    $placeholderRange.Collapse([Microsoft.Office.Interop.Word.WdCollapseDirection]::wdCollapseEnd)
+# State abbreviations
+$stateAbbreviations = @("AL", "AK", "AZ", "AR", "CA", "CO", "CT", "DE", "FL", "GA", "HI", "ID", "IL", "IN", "IA", "KS", "KY", "LA", "ME", "MD", "MA", "MI", "MN", "MS", "MO", "MT", "NE", "NV", "NH", "NJ", "NM", "NY", "NC", "ND", "OH", "OK", "OR", "PA", "RI", "SC", "SD", "TN", "TX", "UT", "VT", "VA", "WA", "WV", "WI", "WY", "USA", "US")
 
-    # Paste the table at the new range position
-    $placeholderRange.Paste()
+foreach ($row in $wordTable.Rows) {
+    foreach ($cell in $row.Cells) {
+        $cellTuple = [Tuple]::Create($row.Index, $cell.ColumnIndex)
 
-    $wordTable = $templateDoc.Tables[1]
-    $placeholderRange.Font.Name = "Arial"
-    $placeholderRange.Font.Size = 8
-    $placeholderRange.HighlightColorIndex = [Microsoft.Office.Interop.Word.WdColorIndex]::wdNoHighlight
+        if ($specificCells -contains $cellTuple) {
+            $text = $cell.Range.Text.Trim()
+            $text = $text -replace ": ", ":"
+            $text = $text -replace ":", ": "
 
-    # Specific cells to format
-    $specificCells = @(
-        [Tuple]::Create(2,1), [Tuple]::Create(2,2), [Tuple]::Create(2,3),
-        [Tuple]::Create(4,1), [Tuple]::Create(4,2), [Tuple]::Create(4,3),
-        [Tuple]::Create(6,1), [Tuple]::Create(6,2), [Tuple]::Create(6,3),
-        [Tuple]::Create(8,1), [Tuple]::Create(8,2), [Tuple]::Create(8,3)
-    )
+            $words = $text -split ' '
+            for ($i = 0; $i -lt $words.Length; $i++) {
+                $upperWord = $words[$i].ToUpper()
 
-    # State abbreviations
-    $stateAbbreviations = @("AL", "AK", "AZ", "AR", "CA", "CO", "CT", "DE", "FL", "GA", "HI", "ID", "IL", "IN", "IA", "KS", "KY", "LA", "ME", "MD", "MA", "MI", "MN", "MS", "MO", "MT", "NE", "NV", "NH", "NJ", "NM", "NY", "NC", "ND", "OH", "OK", "OR", "PA", "RI", "SC", "SD", "TN", "TX", "UT", "VT", "VA", "WA", "WV", "WI", "WY", "USA", "US")
-
-    foreach ($row in $wordTable.Rows) {
-        foreach ($cell in $row.Cells) {
-            $cellTuple = [Tuple]::Create($row.Index, $cell.ColumnIndex)
-
-            if ($specificCells -contains $cellTuple) {
-                $text = $cell.Range.Text.Trim()
-                $text = $text -replace ": ", ":"
-                $text = $text -replace ":", ": "
-
-                $words = $text -split ' '
-                for ($i = 0; $i -lt $words.Length; $i++) {
-                    $upperWord = $words[$i].ToUpper()
-
-                    if ($stateAbbreviations -contains $upperWord) {
-                        $words[$i] = $upperWord
-                    }
-                    elseif ($words[$i] -match "@") {
-                        $words[$i] = $words[$i].ToLower()
-                    }
-                    else {
-                        $words[$i] = [Globalization.CultureInfo]::CurrentCulture.TextInfo.ToTitleCase($words[$i].ToLower())
-                    }
+                if ($stateAbbreviations -contains $upperWord) {
+                    $words[$i] = $upperWord
                 }
-
-                $newText = $words -join " "
-                foreach ($abbreviation in $stateAbbreviations) {
-                    $pattern = "\b$abbreviation\b"
-                    $newText = [Regex]::Replace($newText, $pattern, $abbreviation.ToUpper(), [Text.RegularExpressions.RegexOptions]::IgnoreCase)
+                elseif ($words[$i] -match "@") {
+                    $words[$i] = $words[$i].ToLower()
                 }
-
-                $cell.Range.Text = $newText
+                else {
+                    $words[$i] = [Globalization.CultureInfo]::CurrentCulture.TextInfo.ToTitleCase($words[$i].ToLower())
+                }
             }
+
+            $newText = $words -join " "
+            foreach ($abbreviation in $stateAbbreviations) {
+                $pattern = "\b$abbreviation\b"
+                $newText = [Regex]::Replace($newText, $pattern, $abbreviation.ToUpper(), [Text.RegularExpressions.RegexOptions]::IgnoreCase)
+            }
+
+            $cell.Range.Text = $newText
+            # Resetting cell formatting to remove any residual highlighting or font changes
+            $cell.Range.Font.Name = "Arial"
+            $cell.Range.Font.Size = 8
+            $cell.Range.HighlightColorIndex = [Microsoft.Office.Interop.Word.WdColorIndex]::wdNoHighlight
         }
     }
 }
+
 
 
 
