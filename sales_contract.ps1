@@ -147,9 +147,9 @@ $dtPrices.Columns.Add("MRC", [decimal])
 $dtJoined3 = New-Object System.Data.DataTable
 $dtJoined3.Columns.Add("Description", [string])
 $dtJoined3.Columns.Add("Site Number", [string])
-$dtJoined3.Columns.Add("Item Cost", [string])
-$dtJoined3.Columns.Add("Quantity", [string])
-$dtJoined3.Columns.Add("MRC", [string])
+$dtJoined3.Columns.Add("Monthly Recurring Charges (MRC) Per Unit", [string])
+$dtJoined3.Columns.Add("Units", [string])
+$dtJoined3.Columns.Add("Extended MRC", [string])
 
 $dtPrices2 = New-Object System.Data.DataTable
 #$dtPrices2.Columns.Add("Site Number", [string])
@@ -365,9 +365,6 @@ foreach ($row in $dtPrices2.Rows) {
 
 
 
-
-
-
 # Inserting a blank row at the top of dtPrices2
 $initialRow = $dtPrices2.NewRow() # Creates a new blank row
 $dtPrices2.Rows.InsertAt($initialRow, 0) # Inserts the new blank row at the top (index 0)
@@ -398,7 +395,7 @@ foreach ($currentRow1 in $sitesStatesFinal.Rows) {
 # Summing up the values in the "MRC" column
 $mrcSUM = 0
 foreach ($row in $dtJoined3.Rows) {
-    $mrcValue = $row["MRC"]
+    $mrcValue = $row["Extended MRC"]
     if ($null -ne $mrcValue -and $mrcValue -ne "") {
         try {
             $mrcSUM += [double]::Parse($mrcValue)
@@ -410,24 +407,26 @@ foreach ($row in $dtJoined3.Rows) {
 $mrcSUM = [Math]::Round($mrcSUM, 2).ToString()
 
 
-# Adding a new row to 'dtJoined3'
+# Adding bottom row for Total MRC to the pricing table (aka dtJoined3)
 $newRowForTotal = $dtJoined3.NewRow()
-$newRowForTotal[4] = "Total MRC: " + '$' + $mrcSUM # Replace 3 with the actual index or column name
+$newRowForTotal[3] = "Total MRC:"
+$newRowForTotal[4] = '$' + $mrcSUM
 $dtJoined3.Rows.Add($newRowForTotal)
 
-# Adding the first special row
+# Adding bottom row for Total MRC for MPP to the pricing table (aka dtJoined3)
 $newRow = $dtJoined3.NewRow()
-$newRow[4] = "Total MRC for MPP: N/A"
+$newRow[3] = "Total MRC for MPP:"
+$newRow[4] = "N/A"
 $dtJoined3.Rows.Add($newRow)
 
-# Adding two entirely blank rows
+# Adding two entirely blank rows for aesthetic
 for ($i = 0; $i -lt 2; $i++) {
     $blankRow = $dtJoined3.NewRow()
     $dtJoined3.Rows.Add($blankRow)
 }
 
 
-# Adding the row with specific data in cells [2] and [3]
+# bottom row for shipping to the pricing table (aka dtJoined3)
 $shippingRow = $dtJoined3.NewRow()
 $shippingRow[3] = "Shipping Costs of AT&T Equipment, One Time Charge - (OTC)"
 $shippingRow[4] = '$' + $price
@@ -545,17 +544,25 @@ $customerCityStateZip = $customerInfoDT.Rows[2][0]
 $customerPhone = $customerInfoDT.Rows[4][0]
 
 
-# Prepare the message to display
-$message = @"
-Contact Name: $customerContactName
-Email: $customerEmail
-Street Address: $customerStreetAddress
-City, State, Zip: $customerCityStateZip
-Phone: $customerPhone
-"@
+$customerCity = $customerCityStateZip -replace ', [A-Z]{2} \d{5}(-\d{4})?|[A-Z]{2} \d{5}(-\d{4})?', ""
 
-# Create a MessageBox to show the information
-[System.Windows.Forms.MessageBox]::Show($message, "Customer Information", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Information)
+
+# Attempt to match state abbreviation
+if ($customerCityStateZip -match ', ([A-Z]{2}) ') {
+    $customerState = $matches[1] # Extract the state abbreviation
+} else {
+    $customerState = $null # No match found
+}
+
+# Attempt to match zip code (standard or ZIP+4)
+if ($customerCityStateZip -match '(\d{5}(-\d{4})?)') {
+    $customerZip = $matches[1] # Extract the zip code
+} else {
+    $customerZip = $null # No match found
+}
+
+
+
 
 # Load Word COM object
 $word = New-Object -ComObject Word.Application
@@ -596,12 +603,8 @@ if ($find.Execute($findText)) {
 }
 
 
-
-# Convert the array of integers into a string
-$indexArrayString = $indexArray1 -join ", "
-
 # Placeholder text to find
-$findText = "<<indexArray1>>"
+$findText = "<<customer phone>>"
 
 # Access the Find object
 $find = $templateDoc.Content.Find
@@ -612,8 +615,59 @@ if ($find.Execute($findText)) {
     # Get the range where the text was found
     $textRange = $find.Parent
 
-    # Replace the found text with the string representation of the variable content
-    $textRange.Text = $indexArrayString
+    # Replace the found text with the variable content
+    $textRange.Text = $customerPhone.Trim
+}
+
+
+# Placeholder text to find
+$findText = "<<customer city>>"
+
+# Access the Find object
+$find = $templateDoc.Content.Find
+$find.ClearFormatting()
+
+# Check if the placeholder text is found in the document
+if ($find.Execute($findText)) {
+    # Get the range where the text was found
+    $textRange = $find.Parent
+
+    # Replace the found text with the variable content
+    $textRange.Text = $customerCity.Trim
+}
+
+
+# Placeholder text to find
+$findText = "<<customer state>>"
+
+# Access the Find object
+$find = $templateDoc.Content.Find
+$find.ClearFormatting()
+
+# Check if the placeholder text is found in the document
+if ($find.Execute($findText)) {
+    # Get the range where the text was found
+    $textRange = $find.Parent
+
+    # Replace the found text with the variable content
+    $textRange.Text = $customerState.Trim
+}
+
+
+# Placeholder text to find
+$findText = "<<customer zip>>"
+
+# Access the Find object
+$find = $templateDoc.Content.Find
+$find.ClearFormatting()
+
+# Check if the placeholder text is found in the document
+if ($find.Execute($findText)) {
+    # Get the range where the text was found
+    $textRange = $find.Parent
+
+    # Replace the found text with the variable content
+    $textRange.Text = $customerZip.Trim
 }
 
 
@@ -692,20 +746,111 @@ for ($rowIndex = 0; $rowIndex -lt $rowCount; $rowIndex++) {
         $border.Color = [Microsoft.Office.Interop.Word.WdColor]::wdColorBlack
     }
 
-    # Modifying the borders for the last 5 rows
     $startRow = $wordTable1.Rows.Count - 4
 
-    for ($i = $startRow; $i -le $wordTable1.Rows.Count; $i++) {
+for ($i = $startRow; $i -le $wordTable1.Rows.Count; $i++) {
     # Cells [0] and [1] in each of these rows
     $cell1 = $wordTable1.Cell($i, 1)
     $cell2 = $wordTable1.Cell($i, 2)
 
-    # Removing the bottom and inner borders for these cells
+    # Removing the bottom border for these cells
     $cell1.Borders.Item([Microsoft.Office.Interop.Word.WdBorderType]::wdBorderBottom).LineStyle = [Microsoft.Office.Interop.Word.WdLineStyle]::wdLineStyleNone
-    $cell1.Borders.Item([Microsoft.Office.Interop.Word.WdBorderType]::wdBorderVertical).LineStyle = [Microsoft.Office.Interop.Word.WdLineStyle]::wdLineStyleNone
     $cell2.Borders.Item([Microsoft.Office.Interop.Word.WdBorderType]::wdBorderBottom).LineStyle = [Microsoft.Office.Interop.Word.WdLineStyle]::wdLineStyleNone
-    $cell2.Borders.Item([Microsoft.Office.Interop.Word.WdBorderType]::wdBorderVertical).LineStyle = [Microsoft.Office.Interop.Word.WdLineStyle]::wdLineStyleNone
+    
+    # Correctly removing the "inner vertical border" between $cell1 and $cell2
+    $cell1.Borders.Item([Microsoft.Office.Interop.Word.WdBorderType]::wdBorderRight).LineStyle = [Microsoft.Office.Interop.Word.WdLineStyle]::wdLineStyleNone
 }
+
+
+    
+
+# Remove internal vertical borders from the first row
+for ($i = 2; $i -lt $wordTable1.Columns.Count; $i++) {
+    $wordTable1.Cell(1, $i).Borders.Item([Microsoft.Office.Interop.Word.WdBorderType]::wdBorderVertical).LineStyle = [Microsoft.Office.Interop.Word.WdLineStyle]::wdLineStyleNone
+}
+
+# Remove bottom borders from the first row, starting from the 2nd cell
+for ($i = 2; $i -le $wordTable1.Columns.Count; $i++) {
+    $wordTable1.Cell(2, $i).Borders.Item([Microsoft.Office.Interop.Word.WdBorderType]::wdBorderBottom).LineStyle = [Microsoft.Office.Interop.Word.WdLineStyle]::wdLineStyleNone
+}
+
+# Remove internal vertical borders from the second row, starting at the 2nd cell
+for ($i = 1; $i -lt $wordTable1.Columns.Count; $i++) {
+    $wordTable1.Cell(2, $i).Borders.Item([Microsoft.Office.Interop.Word.WdBorderType]::wdBorderRight).LineStyle = [Microsoft.Office.Interop.Word.WdLineStyle]::wdLineStyleNone
+}
+
+# Remove internal vertical borders from the second row, starting at the 2nd cell
+for ($i = 2; $i -lt $wordTable1.Columns.Count; $i++) {
+    $wordTable1.Cell(3, $i).Borders.Item([Microsoft.Office.Interop.Word.WdBorderType]::wdBorderRight).LineStyle = [Microsoft.Office.Interop.Word.WdLineStyle]::wdLineStyleNone
+}
+
+
+
+
+
+foreach ($index in $indexArray1) {
+    $rowIndex = $index + 3 # Adjusting each index as specified (+1)
+    
+    # Ensure the row index is within the table's bounds
+    if ($rowIndex -le $wordTable1.Rows.Count) {
+        # Loop through all but the last cell in the specified row to remove inner vertical borders
+        for ($i = 1; $i -lt $wordTable1.Columns.Count; $i++) {
+            $wordTable1.Cell($rowIndex, $i).Borders.Item([Microsoft.Office.Interop.Word.WdBorderType]::wdBorderRight).LineStyle = [Microsoft.Office.Interop.Word.WdLineStyle]::wdLineStyleNone
+        }
+    }
+}
+
+foreach ($index in $indexArray1) {
+    $rowIndex = $index + 3 # Adjusting each index as specified (+1)
+    
+    # Ensure the row index is within the table's bounds
+    if ($rowIndex -le $wordTable1.Rows.Count) {
+        # Loop through all but the last cell in the specified row to remove inner vertical borders
+        for ($i = 2; $i -le $wordTable1.Columns.Count; $i++) {
+            $wordTable1.Cell($rowIndex, $i).Borders.Item([Microsoft.Office.Interop.Word.WdBorderType]::wdBorderBottom).LineStyle = [Microsoft.Office.Interop.Word.WdLineStyle]::wdLineStyleNone
+        }
+    }
+}
+
+foreach ($index in $indexArray1) {
+    $rowIndex = $index + 4 # Adjusting each index as specified (+1)
+    
+    # Ensure the row index is within the table's bounds
+    if ($rowIndex -le $wordTable1.Rows.Count) {
+        # Loop through all but the last cell in the specified row to remove inner vertical borders
+        for ($i = 2; $i -lt $wordTable1.Columns.Count; $i++) {
+            $wordTable1.Cell($rowIndex, $i).Borders.Item([Microsoft.Office.Interop.Word.WdBorderType]::wdBorderRight).LineStyle = [Microsoft.Office.Interop.Word.WdLineStyle]::wdLineStyleNone
+        }
+    }
+}
+
+
+# Access the first cell in the second row
+$cell = $wordTable1.Cell(3, 1)
+
+# Make the text bold and set font size to 9
+$cell.Range.Font.Bold = $true
+$cell.Range.Font.Size = 9
+
+
+
+# Iterate over each index in indexArray1 except for the last one
+for ($j = 0; $j -lt $indexArray1.Count - 1; $j++) {
+    $index = $indexArray1[$j]
+    $rowIndex = $index + 4 # Adjusting each index as specified
+
+    # Ensure the row index is within the table's bounds
+    if ($rowIndex -le $wordTable1.Rows.Count) {
+        # Access the first cell in the specified row
+        $cell = $wordTable1.Cell($rowIndex, 1)
+        
+        # Make the text bold and set font size to 9
+        $cell.Range.Font.Bold = $true
+        $cell.Range.Font.Size = 9
+    }
+}
+
+
 
 
 
@@ -768,70 +913,7 @@ if ($findSKU.Execute($findTextSKU)) {
 }
 
 
-
-
-
-$findTextSKU1 = "<<customerInfoDT>>"
-$findSKU1 = $templateDoc.Content.Find
-$findSKU1.ClearFormatting()
-
-if ($findSKU1.Execute($findTextSKU1)) {
-    $dataTableRangeSKU1 = $findSKU1.Parent
-    $dataTableRangeSKU1.Select()
-
-    $rowCountSKU1 = $customerInfoDT.Rows.Count
-    $columnCountSKU1 = $customerInfoDT.Columns.Count
-    $wordTableSKU1 = $templateDoc.Tables.Add($dataTableRangeSKU1, $rowCountSKU1 + 1, $columnCountSKU1)
-
-    # Center the entire table horizontally
-    $wordTableSKU1.Rows.Alignment = [Microsoft.Office.Interop.Word.WdRowAlignment]::wdAlignRowCenter
-
-    # Set the cell alignment to center
-    foreach ($cellSKU1 in $wordTableSKU1.Range.Cells) {
-        $cellSKU1.Range.ParagraphFormat.Alignment = [Microsoft.Office.Interop.Word.WdParagraphAlignment]::wdAlignParagraphCenter
-        $cellSKU1.VerticalAlignment = [Microsoft.Office.Interop.Word.WdCellVerticalAlignment]::wdCellAlignVerticalCenter
-
-        # Set the font and size
-        $cellSKU1.Range.Font.Name = "Arial"
-        $cellSKU1.Range.Font.Size = 8
-    }
-
-    # Add column headers for SKU table
-    for ($columnIndexSKU1 = 0; $columnIndexSKU1 -lt $columnCountSKU1; $columnIndexSKU1++) {
-        $headerTextSKU1 = [System.Convert]::ToString($customerInfoDT.Columns[$columnIndexSKU1].ColumnName)
-        $wordTableSKU1.Cell(1, $columnIndexSKU1 + 1).Range.Text = $headerTextSKU1
-    }
-
-    # Add data rows for SKU table
-    for ($rowIndexSKU1 = 0; $rowIndexSKU1 -lt $rowCountSKU1; $rowIndexSKU1++) {
-        for ($columnIndexSKU1 = 0; $columnIndexSKU1 -lt $columnCountSKU1; $columnIndexSKU1++) {
-            if ($wordTableSKU1.Cell($rowIndexSKU1 + 2, $columnIndexSKU1 + 1)) {
-                $cellDataSKU1 = $customerInfoDT.Rows[$rowIndexSKU1][$columnIndexSKU1] -as [String]
-                $wordTableSKU1.Cell($rowIndexSKU1 + 2, $columnIndexSKU1 + 1).Range.Text = $cellDataSKU1
-            }
-        }
-    }
-
-    # Set the table's border style
-    $borders = @(
-        $wordTableSKU1.Borders.Item([Microsoft.Office.Interop.Word.WdBorderType]::wdBorderLeft),
-        $wordTableSKU1.Borders.Item([Microsoft.Office.Interop.Word.WdBorderType]::wdBorderRight),
-        $wordTableSKU1.Borders.Item([Microsoft.Office.Interop.Word.WdBorderType]::wdBorderTop),
-        $wordTableSKU1.Borders.Item([Microsoft.Office.Interop.Word.WdBorderType]::wdBorderBottom),
-        $wordTableSKU1.Borders.Item([Microsoft.Office.Interop.Word.WdBorderType]::wdBorderHorizontal),
-        $wordTableSKU1.Borders.Item([Microsoft.Office.Interop.Word.WdBorderType]::wdBorderVertical)
-    )
-
-    foreach ($border in $borders) {
-        $border.LineStyle = [Microsoft.Office.Interop.Word.WdLineStyle]::wdLineStyleSingle
-        $border.Color = [Microsoft.Office.Interop.Word.WdColor]::wdColorBlack
-    }
-}
-
-
-
 #Placeholder text for SKU table
-
 $findTextSKU1 = "<<sitesStatesSKU>>"
 $findSKU1 = $templateDoc.Content.Find
 $findSKU1.ClearFormatting()
@@ -892,12 +974,7 @@ if ($findSKU1.Execute($findTextSKU1)) {
 
 
 
-
-
-# Assuming $word is already a Word application object and $templateDoc is the document
-
-#INSERTING THE COVER PAGE TABLE AND FORMATTING IT
-# Assuming $templateDoc is your Word document object
+# Formatting and beautifying the cover page
 $wordTable = $templateDoc.Tables[1]
 
 # Specific cells to format
@@ -1026,9 +1103,38 @@ $workbookXLS = $excelXLS.Workbooks.Add()
 $worksheetXLS = $workbookXLS.Worksheets.Item(1)
 
 # Insert siteStates DataTable starting at column A, row 1
+#for ($i = 0; $i -lt $sitesStatesFinal.Rows.Count; $i++) {
+#    $worksheetXLS.Cells.Item($i + 1, 1) = $sitesStatesFinal.Rows[$i][0].ToString()
+#}
+
+# Initialize an array to hold non-blank rows
+$nonBlankRows = @()
+
+# Filter out blank rows from the DataTable
 for ($i = 0; $i -lt $sitesStatesFinal.Rows.Count; $i++) {
-    $worksheetXLS.Cells.Item($i + 1, 1) = $sitesStatesFinal.Rows[$i][0].ToString()
+    if (-not [string]::IsNullOrWhiteSpace($sitesStatesFinal.Rows[$i][0].ToString())) {
+        $nonBlankRows += $sitesStatesFinal.Rows[$i]
+    }
 }
+
+# Adjust the indexArray1 considering the first row will be eventually skipped in insertion
+$adjustedIndexArray = @()
+foreach ($index in $indexArray1) {
+    if ($index -lt $nonBlankRows.Count) {
+        $adjustedIndexArray += $index # Adjusting for 0-based index and eventual first row removal
+    }
+}
+
+# Remove rows based on the adjusted index array
+$adjustedRows = $nonBlankRows | Where-Object { $nonBlankRows.IndexOf($_) -notin $adjustedIndexArray }
+
+# Skip the first row of the adjusted results when inserting into Excel
+for ($i = 1; $i -lt $adjustedRows.Count; $i++) {
+    # Adjust for Excel's 1-based indexing
+    $worksheetXLS.Cells.Item($i, 1) = $adjustedRows[$i][0].ToString()
+}
+
+
 
 # Insert dtPrices DataTable starting at column B, row 1
 for ($i = 0; $i -lt $dtPrices1.Rows.Count; $i++) {
