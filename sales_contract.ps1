@@ -105,6 +105,147 @@ $form.Add_Shown({$form.Activate()})
 $form.ShowDialog() | Out-Null
 
 
+
+# Add necessary assembly for Outlook and Windows Forms
+Add-Type -AssemblyName "Microsoft.Office.Interop.Outlook"
+Add-Type -AssemblyName System.Windows.Forms
+
+# Initialize Outlook
+$outlook = New-Object -ComObject Outlook.Application
+$namespace = $outlook.GetNamespace("MAPI")
+
+function Get-GALUserDetails {
+    param([string]$emailAddress)
+
+    $Recipient = $namespace.CreateRecipient($emailAddress)
+    $Recipient.Resolve()
+
+    if ($Recipient.Resolved -and $Recipient.AddressEntry.GetExchangeUser()) {
+        $ExchangeUser = $Recipient.AddressEntry.GetExchangeUser()
+        $Manager = $ExchangeUser.GetExchangeUserManager()
+
+        if ($Manager) {
+            $ManagerName = $Manager.Name
+        }
+
+        $Details = New-Object PSObject -Property @{
+            Name = $ExchangeUser.Name
+            JobTitle = $ExchangeUser.JobTitle
+            BusinessAddress = $ExchangeUser.StreetAddress
+            BusinessCity = $ExchangeUser.City
+            BusinessState = $ExchangeUser.StateOrProvince
+            BusinessZip = $ExchangeUser.PostalCode
+            BusinessPhone = $ExchangeUser.BusinessTelephoneNumber
+            ManagerName = $ManagerName
+        }
+
+        return $Details
+    } else {
+        Write-Warning "Could not resolve $emailAddress in Global Address List."
+        return $null
+    }
+}
+
+# Modified input dialog with Skip option
+function Show-InputDialogWithSkip {
+    param([string]$Message, [string]$WindowTitle = "Input")
+
+    $form = New-Object System.Windows.Forms.Form
+    $form.Text = $WindowTitle
+    $form.Size = New-Object System.Drawing.Size(300,200)
+    $form.StartPosition = "CenterScreen"
+
+    $label = New-Object System.Windows.Forms.Label
+    $label.Text = $Message
+    $label.Location = New-Object System.Drawing.Point(10,20)
+    $label.Size = New-Object System.Drawing.Size(280,20)
+
+    $textBox = New-Object System.Windows.Forms.TextBox
+    $textBox.Location = New-Object System.Drawing.Point(10,40)
+    $textBox.Size = New-Object System.Drawing.Size(260,20)
+
+    $okButton = New-Object System.Windows.Forms.Button
+    $okButton.Location = New-Object System.Drawing.Point(10,70)
+    $okButton.Size = New-Object System.Drawing.Size(75,23)
+    $okButton.Text = "OK"
+    $okButton.DialogResult = [System.Windows.Forms.DialogResult]::OK
+
+    $skipButton = New-Object System.Windows.Forms.Button
+    $skipButton.Location = New-Object System.Drawing.Point(195,70)
+    $skipButton.Size = New-Object System.Drawing.Size(75,23)
+    $skipButton.Text = "Skip"
+    $skipButton.DialogResult = [System.Windows.Forms.DialogResult]::Cancel
+
+    $form.AcceptButton = $okButton
+    $form.CancelButton = $skipButton
+
+    $form.Controls.Add($label)
+    $form.Controls.Add($textBox)
+    $form.Controls.Add($okButton)
+    $form.Controls.Add($skipButton)
+
+    $form.Topmost = $true
+
+    $result = $form.ShowDialog()
+
+    if ($result -eq [System.Windows.Forms.DialogResult]::OK) {
+        return $textBox.Text
+    } elseif ($result -eq [System.Windows.Forms.DialogResult]::Cancel) {
+        return $null
+    }
+}
+
+# Main loop
+do {
+    $emailAddress = Show-InputDialogWithSkip -Message "Enter the User ID (Email Address) of the person:" -WindowTitle "User ID Input"
+    if ($null -eq $emailAddress) {
+        Write-Output "User skipped input."
+        break
+    }
+
+    $UserDetails = Get-GALUserDetails -emailAddress $emailAddress
+
+    if ($UserDetails) {
+        [System.Windows.Forms.MessageBox]::Show("Name: $($UserDetails.Name)`nJob Title: $($UserDetails.JobTitle)`nBusiness Address: $($UserDetails.BusinessAddress)`nBusiness Phone: $($UserDetails.BusinessPhone)`nManager Name: $($UserDetails.ManagerName)", "User Details")
+        $retry = $false
+    } else {
+        $retry = $true
+        [System.Windows.Forms.MessageBox]::Show("No details found for $emailAddress. Would you like to retry?", "Error", [System.Windows.Forms.MessageBoxButtons]::RetryCancel) -eq [System.Windows.Forms.DialogResult]::Retry
+    }
+} while ($retry)
+
+
+$salesName = $Details.Name
+$salesJobTitle = $Details.JobTitle
+$salesStreetAddress = $Details.BusinessAddress
+$salesCity = $Details.BusinessCity
+$salesState = $Details.BusinessState
+$salesZip = $Details.BusinessZip
+$salesPhone = $Details.BusinessPhone
+$salesManagerName = $Details.ManagerName
+
+
+function Convert-NameFormat {
+    param([string]$name)
+
+    if ($name -contains ',') {
+        $parts = $name -split ','
+        $formattedName = "$($parts[1].Trim()) $($parts[0].Trim())"
+    } else {
+        $formattedName = $name
+    }
+
+    return $formattedName
+}
+
+# Assuming you have $Name and $ManagerName variables already populated
+$salesName = Convert-NameFormat -name $salesName
+$salesManagerName = Convert-NameFormat -name $salesManagerName
+
+
+
+
+
 # Line by line capture for descriptions, quantity, and prices
 
 
@@ -668,6 +809,103 @@ if ($find.Execute($findText)) {
 
     # Replace the found text with the variable content
     $textRange.Text = $customerZip.Trim
+}
+
+
+# Placeholder text to find
+$findText = "<<sales name>>"
+
+# Access the Find object
+$find = $templateDoc.Content.Find
+$find.ClearFormatting()
+
+# Check if the placeholder text is found in the document
+if ($find.Execute($findText)) {
+    # Get the range where the text was found
+    $textRange = $find.Parent
+
+    # Replace the found text with the variable content
+    $textRange.Text = $salesName.Trim
+}
+
+# Placeholder text to find
+$findText = "<<sales street>>"
+
+# Access the Find object
+$find = $templateDoc.Content.Find
+$find.ClearFormatting()
+
+# Check if the placeholder text is found in the document
+if ($find.Execute($findText)) {
+    # Get the range where the text was found
+    $textRange = $find.Parent
+
+    # Replace the found text with the variable content
+    $textRange.Text = $salesStreetAddress.Trim
+}
+
+# Placeholder text to find
+$findText = "<<sales city>>"
+
+# Access the Find object
+$find = $templateDoc.Content.Find
+$find.ClearFormatting()
+
+# Check if the placeholder text is found in the document
+if ($find.Execute($findText)) {
+    # Get the range where the text was found
+    $textRange = $find.Parent
+
+    # Replace the found text with the variable content
+    $textRange.Text = $salesCity.Trim
+}
+
+# Placeholder text to find
+$findText = "<<sales state>>"
+
+# Access the Find object
+$find = $templateDoc.Content.Find
+$find.ClearFormatting()
+
+# Check if the placeholder text is found in the document
+if ($find.Execute($findText)) {
+    # Get the range where the text was found
+    $textRange = $find.Parent
+
+    # Replace the found text with the variable content
+    $textRange.Text = $salesState.Trim
+}
+
+# Placeholder text to find
+$findText = "<<sales zip>>"
+
+# Access the Find object
+$find = $templateDoc.Content.Find
+$find.ClearFormatting()
+
+# Check if the placeholder text is found in the document
+if ($find.Execute($findText)) {
+    # Get the range where the text was found
+    $textRange = $find.Parent
+
+    # Replace the found text with the variable content
+    $textRange.Text = $salesZip.Trim
+}
+
+# Placeholder text to find
+$findText = "<<sales manager>>"
+
+# Access the Find object
+$find = $templateDoc.Content.Find
+$find.ClearFormatting()
+
+# Check if the placeholder text is found in the document
+if ($find.Execute($findText)) {
+    # Get the range where the text was found
+    $textRange = $find.Parent
+
+    # Replace the found text with the variable content
+    $textRange.Text = $salesManagerName.Trim
 }
 
 
