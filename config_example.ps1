@@ -8,6 +8,16 @@ $excelTemplateNew = "ENTER PATH HERE"
 
 $XLSfilePath = "ENTER PATH HERE"
 
-$telcoName = "ENTER NAME HERE"
+$telcoSales = ""
 
-$telcoAddress = "ENTER ADDRESS HERE"
+$telcoStreet = ""
+
+$telcoCity = ""
+
+$telcoStateZip = ""
+
+$telcoPhone = ""
+
+$telcoEmail = ""
+
+$telcoName = ""

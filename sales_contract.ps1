@@ -325,7 +325,7 @@ foreach ($row in $customerInfoDT.Rows) {
     $currentText = $row["Column1"]
     
     # Define a regex pattern that matches the specified keywords (with possible multiple whitespaces between words) and any text following them
-    $pattern = "(Quote\s+No.*|Quote\s+Date.*|Valid\s+Until.*|Payment\s+Term.*)|Quoted|$telcoSales"
+    $pattern = "(Quote\s+No.*|Quote\s+Date.*|Valid\s+Until.*|Payment\s+Term.*)|Quoted|$telcoSales|$telcoStreet|$telcoCity|$telcoStateZip|$telcoPhone|$telcoEmail|$telcoName"
 
     # Replace matched patterns with an empty string, effectively removing them
     $updatedText = $currentText -replace $pattern, ""
@@ -678,9 +678,10 @@ for ($i = 0; $i -lt $dtSKU.Rows.Count; $i++) {
 
 #Variables from customer contact regex extraction
 
+$customerName = $customerInfoDT.Rows[0][0]
 $customerContactName = $customerInfoDT.Rows[3][0]
 $customerEmail = $customerInfoDT.Rows[5][0]
-$customerStreetAddress = $customerInfoDT.Rows[1][0]
+$customerStreet = $customerInfoDT.Rows[1][0]
 $customerCityStateZip = $customerInfoDT.Rows[2][0]
 $customerPhone = $customerInfoDT.Rows[4][0]
 
@@ -709,6 +710,23 @@ if ($customerCityStateZip -match '(\d{5}(-\d{4})?)') {
 $word = New-Object -ComObject Word.Application
 $templateDoc = $word.Documents.Open($contractTemplate) # Update the path
 $word.Visible = $true
+
+
+# Placeholder text to find
+$findText = "<<customer name>>"
+
+# Access the Find object
+$find = $templateDoc.Content.Find
+$find.ClearFormatting()
+
+# Check if the placeholder text is found in the document
+if ($find.Execute($findText)) {
+    # Get the range where the text was found
+    $textRange = $find.Parent
+
+    # Replace the found text with the variable content
+    $textRange.Text = $customerName
+}
 
 # Placeholder text to find
 $findText = "<<customer contact>>"
@@ -757,7 +775,23 @@ if ($find.Execute($findText)) {
     $textRange = $find.Parent
 
     # Replace the found text with the variable content
-    $textRange.Text = $customerPhone.Trim
+    $textRange.Text = $customerPhone
+}
+
+# Placeholder text to find
+$findText = "<<customer street>>"
+
+# Access the Find object
+$find = $templateDoc.Content.Find
+$find.ClearFormatting()
+
+# Check if the placeholder text is found in the document
+if ($find.Execute($findText)) {
+    # Get the range where the text was found
+    $textRange = $find.Parent
+
+    # Replace the found text with the variable content
+    $textRange.Text = $customerStreet
 }
 
 
@@ -774,7 +808,7 @@ if ($find.Execute($findText)) {
     $textRange = $find.Parent
 
     # Replace the found text with the variable content
-    $textRange.Text = $customerCity.Trim
+    $textRange.Text = $customerCity
 }
 
 
@@ -791,7 +825,7 @@ if ($find.Execute($findText)) {
     $textRange = $find.Parent
 
     # Replace the found text with the variable content
-    $textRange.Text = $customerState.Trim
+    $textRange.Text = $customerState
 }
 
 
@@ -808,7 +842,7 @@ if ($find.Execute($findText)) {
     $textRange = $find.Parent
 
     # Replace the found text with the variable content
-    $textRange.Text = $customerZip.Trim
+    $textRange.Text = $customerZip
 }
 
 
@@ -825,7 +859,7 @@ if ($find.Execute($findText)) {
     $textRange = $find.Parent
 
     # Replace the found text with the variable content
-    $textRange.Text = $salesName.Trim
+    $textRange.Text = $salesName
 }
 
 # Placeholder text to find
@@ -841,7 +875,7 @@ if ($find.Execute($findText)) {
     $textRange = $find.Parent
 
     # Replace the found text with the variable content
-    $textRange.Text = $salesStreetAddress.Trim
+    $textRange.Text = $salesStreetAddress
 }
 
 # Placeholder text to find
@@ -857,7 +891,7 @@ if ($find.Execute($findText)) {
     $textRange = $find.Parent
 
     # Replace the found text with the variable content
-    $textRange.Text = $salesCity.Trim
+    $textRange.Text = $salesCity
 }
 
 # Placeholder text to find
@@ -873,7 +907,7 @@ if ($find.Execute($findText)) {
     $textRange = $find.Parent
 
     # Replace the found text with the variable content
-    $textRange.Text = $salesState.Trim
+    $textRange.Text = $salesState
 }
 
 # Placeholder text to find
@@ -889,7 +923,7 @@ if ($find.Execute($findText)) {
     $textRange = $find.Parent
 
     # Replace the found text with the variable content
-    $textRange.Text = $salesZip.Trim
+    $textRange.Text = $salesZip
 }
 
 # Placeholder text to find
@@ -905,7 +939,7 @@ if ($find.Execute($findText)) {
     $textRange = $find.Parent
 
     # Replace the found text with the variable content
-    $textRange.Text = $salesManagerName.Trim
+    $textRange.Text = $salesManagerName
 }
 
 
@@ -1152,7 +1186,7 @@ if ($findSKU.Execute($findTextSKU)) {
 
 
 #Placeholder text for SKU table
-$findTextSKU1 = "<<sitesStatesSKU>>"
+$findTextSKU1 = "<<customerInfoDT>>"
 $findSKU1 = $templateDoc.Content.Find
 $findSKU1.ClearFormatting()
 
@@ -1160,8 +1194,8 @@ if ($findSKU1.Execute($findTextSKU1)) {
     $dataTableRangeSKU1 = $findSKU1.Parent
     $dataTableRangeSKU1.Select()
 
-    $rowCountSKU1 = $sitesStatesSKU.Rows.Count
-    $columnCountSKU1 = $sitesStatesSKU.Columns.Count
+    $rowCountSKU1 = $customerInfoDT.Rows.Count
+    $columnCountSKU1 = $customerInfoDT.Columns.Count
     $wordTableSKU1 = $templateDoc.Tables.Add($dataTableRangeSKU1, $rowCountSKU1 + 1, $columnCountSKU1)
 
     # Center the entire table horizontally
@@ -1179,7 +1213,7 @@ if ($findSKU1.Execute($findTextSKU1)) {
 
     # Add column headers for SKU table
     for ($columnIndexSKU1 = 0; $columnIndexSKU1 -lt $columnCountSKU1; $columnIndexSKU1++) {
-        $headerTextSKU1 = [System.Convert]::ToString($sitesStatesSKU.Columns[$columnIndexSKU1].ColumnName)
+        $headerTextSKU1 = [System.Convert]::ToString($customerInfoDT.Columns[$columnIndexSKU1].ColumnName)
         $wordTableSKU1.Cell(1, $columnIndexSKU1 + 1).Range.Text = $headerTextSKU1
     }
 
@@ -1187,7 +1221,7 @@ if ($findSKU1.Execute($findTextSKU1)) {
     for ($rowIndexSKU1 = 0; $rowIndexSKU1 -lt $rowCountSKU1; $rowIndexSKU1++) {
         for ($columnIndexSKU1 = 0; $columnIndexSKU1 -lt $columnCountSKU1; $columnIndexSKU1++) {
             if ($wordTableSKU1.Cell($rowIndexSKU1 + 2, $columnIndexSKU1 + 1)) {
-                $cellDataSKU1 = $sitesStatesSKU.Rows[$rowIndexSKU1][$columnIndexSKU1] -as [String]
+                $cellDataSKU1 = $customerInfoDT.Rows[$rowIndexSKU1][$columnIndexSKU1] -as [String]
                 $wordTableSKU1.Cell($rowIndexSKU1 + 2, $columnIndexSKU1 + 1).Range.Text = $cellDataSKU1
             }
         }
