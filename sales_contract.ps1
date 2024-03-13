@@ -714,273 +714,44 @@ $templateDoc = $word.Documents.Open($contractTemplate) # Update the path
 $word.Visible = $true
 
 
-# Placeholder text to find
-$findText = "<<customer name>>"
+function Find-PlaceholderText {
+    param (
+        [Parameter(Mandatory=$true)]
+        [object]$Document,
 
-# Access the Find object
-$find = $templateDoc.Content.Find
-$find.ClearFormatting()
+        [Parameter(Mandatory=$true)]
+        [string]$FindText,
 
-# Loop to replace all instances of the placeholder text
-while ($find.Execute($FindText)) {
-    # Get the range where the text was found
-    $textRange = $find.Parent
+        [Parameter(Mandatory=$true)]
+        [string]$ReplaceText
+    )
 
-    # Replace the found text with the variable content
-    $textRange.Text = $customerName
+    $find = $Document.Content.Find
+    $find.ClearFormatting()
 
-    # Reset the search starting point to continue searching the document
-    $find.Wrap = 1 # wdFindContinue
+    while ($find.Execute($FindText)) {
+        $textRange = $find.Parent
+        $textRange.Text = $ReplaceText
+        $find.Wrap = 1 # wdFindContinue
+    }
 }
 
 
-# Placeholder text to find
-$findText = "<<customer contact>>"
-
-# Access the Find object
-$find = $templateDoc.Content.Find
-$find.ClearFormatting()
-
-# Check if the placeholder text is found in the document
-while ($find.Execute($findText)) {
-    # Get the range where the text was found
-    $textRange = $find.Parent
-
-    # Replace the found text with the variable content
-    $textRange.Text = $customerContactName
-
-    # Reset the search starting point to continue searching the document
-    $find.Wrap = 1 # wdFindContinue
-}
-
-
-# Placeholder text to find
-$findText = "<<customer email>>"
-
-# Access the Find object
-$find = $templateDoc.Content.Find
-$find.ClearFormatting()
-
-# Check if the placeholder text is found in the document
-while ($find.Execute($findText)) {
-    # Get the range where the text was found
-    $textRange = $find.Parent
-
-    # Replace the found text with the variable content
-    $textRange.Text = $customerEmail
-
-    # Reset the search starting point to continue searching the document
-    $find.Wrap = 1 # wdFindContinue
-}
-
-
-# Placeholder text to find
-$findText = "<<customer phone>>"
-
-# Access the Find object
-$find = $templateDoc.Content.Find
-$find.ClearFormatting()
-
-# Check if the placeholder text is found in the document
-while ($find.Execute($findText)) {
-    # Get the range where the text was found
-    $textRange = $find.Parent
-
-    # Replace the found text with the variable content
-    $textRange.Text = $customerPhone
-
-    # Reset the search starting point to continue searching the document
-    $find.Wrap = 1 # wdFindContinue
-}
-
-# Placeholder text to find
-$findText = "<<customer street>>"
-
-# Access the Find object
-$find = $templateDoc.Content.Find
-$find.ClearFormatting()
-
-# Check if the placeholder text is found in the document
-while ($find.Execute($findText)) {
-    # Get the range where the text was found
-    $textRange = $find.Parent
-
-    # Replace the found text with the variable content
-    $textRange.Text = $customerStreet
-
-    $find.Wrap = 1 # wdFindContinue
-}
-
-
-# Placeholder text to find
-$findText = "<<customer city>>"
-
-# Access the Find object
-$find = $templateDoc.Content.Find
-$find.ClearFormatting()
-
-# Check if the placeholder text is found in the document
-while ($find.Execute($findText)) {
-    # Get the range where the text was found
-    $textRange = $find.Parent
-
-    # Replace the found text with the variable content
-    $textRange.Text = $customerCity
-
-    $find.Wrap = 1 # wdFindContinue
-}
-
-
-# Placeholder text to find
-$findText = "<<customer state>>"
-
-# Access the Find object
-$find = $templateDoc.Content.Find
-$find.ClearFormatting()
-
-# Check if the placeholder text is found in the document
-while ($find.Execute($findText)) {
-    # Get the range where the text was found
-    $textRange = $find.Parent
-
-    # Replace the found text with the variable content
-    $textRange.Text = $customerState
-
-    $find.Wrap = 1 # wdFindContinue
-}
-
-
-# Placeholder text to find
-$findText = "<<customer zip>>"
-
-# Access the Find object
-$find = $templateDoc.Content.Find
-$find.ClearFormatting()
-
-# Check if the placeholder text is found in the document
-while ($find.Execute($findText)) {
-    # Get the range where the text was found
-    $textRange = $find.Parent
-
-    # Replace the found text with the variable content
-    $textRange.Text = $customerZip
-
-    $find.Wrap = 1 # wdFindContinue
-}
-
-
-# Placeholder text to find
-$findText = "<<sales name>>"
-
-# Access the Find object
-$find = $templateDoc.Content.Find
-$find.ClearFormatting()
-
-# Check if the placeholder text is found in the document
-while ($find.Execute($findText)) {
-    # Get the range where the text was found
-    $textRange = $find.Parent
-
-    # Replace the found text with the variable content
-    $textRange.Text = $salesName
-
-    $find.Wrap = 1 # wdFindContinue
-}
-
-# Placeholder text to find
-$findText = "<<sales street>>"
-
-# Access the Find object
-$find = $templateDoc.Content.Find
-$find.ClearFormatting()
-
-# Check if the placeholder text is found in the document
-while ($find.Execute($findText)) {
-    # Get the range where the text was found
-    $textRange = $find.Parent
-
-    # Replace the found text with the variable content
-    $textRange.Text = $salesStreetAddress
-
-    # Reset the search starting point to continue searching the document
-    $find.Wrap = 1 # wdFindContinue
-}
-
-# Placeholder text to find
-$findText = "<<sales city>>"
-
-# Access the Find object
-$find = $templateDoc.Content.Find
-$find.ClearFormatting()
-
-# Check if the placeholder text is found in the document
-while ($find.Execute($findText)) {
-    # Get the range where the text was found
-    $textRange = $find.Parent
-
-    # Replace the found text with the variable content
-    $textRange.Text = $salesCity
-
-    # Reset the search starting point to continue searching the document
-    $find.Wrap = 1 # wdFindContinue
-}
-
-# Placeholder text to find
-$findText = "<<sales state>>"
-
-# Access the Find object
-$find = $templateDoc.Content.Find
-$find.ClearFormatting()
-
-# Check if the placeholder text is found in the document
-while ($find.Execute($findText)) {
-    # Get the range where the text was found
-    $textRange = $find.Parent
-
-    # Replace the found text with the variable content
-    $textRange.Text = $salesState
-
-    # Reset the search starting point to continue searching the document
-    $find.Wrap = 1 # wdFindContinue
-}
-
-# Placeholder text to find
-$findText = "<<sales zip>>"
-
-# Access the Find object
-$find = $templateDoc.Content.Find
-$find.ClearFormatting()
-
-# Check if the placeholder text is found in the document
-while ($find.Execute($findText)) {
-    # Get the range where the text was found
-    $textRange = $find.Parent
-
-    # Replace the found text with the variable content
-    $textRange.Text = $salesZip
-
-    # Reset the search starting point to continue searching the document
-    $find.Wrap = 1 # wdFindContinue
-}
-
-# Placeholder text to find
-$findText = "<<sales manager>>"
-
-# Access the Find object
-$find = $templateDoc.Content.Find
-$find.ClearFormatting()
-
-# Check if the placeholder text is found in the document
-while ($find.Execute($findText)) {
-    # Get the range where the text was found
-    $textRange = $find.Parent
-
-    # Replace the found text with the variable content
-    $textRange.Text = $salesManagerName
-
-    # Reset the search starting point to continue searching the document
-    $find.Wrap = 1 # wdFindContinue
-}
+Replace-PlaceholderText -Document $templateDoc -FindText "<<customer name>>" -ReplaceText $customerName
+Replace-PlaceholderText -Document $templateDoc -FindText "<<customer contact>>" -ReplaceText $customerContact
+Replace-PlaceholderText -Document $templateDoc -FindText "<<customer email>>" -ReplaceText $customerEmail
+Replace-PlaceholderText -Document $templateDoc -FindText "<<customer phone>>" -ReplaceText $customerPhone
+Replace-PlaceholderText -Document $templateDoc -FindText "<<customer street>>" -ReplaceText $customerStreet
+Replace-PlaceholderText -Document $templateDoc -FindText "<<customer city>>" -ReplaceText $customerCity
+Replace-PlaceholderText -Document $templateDoc -FindText "<<customer state>>" -ReplaceText $customerState
+Replace-PlaceholderText -Document $templateDoc -FindText "<<customer zip>>" -ReplaceText $customerZip
+
+Replace-PlaceholderText -Document $templateDoc -FindText "<<sales name>>" -ReplaceText $salesName
+Replace-PlaceholderText -Document $templateDoc -FindText "<<sales street>>" -ReplaceText $salesStreetAddress
+Replace-PlaceholderText -Document $templateDoc -FindText "<<sales city>>" -ReplaceText $salesCity
+Replace-PlaceholderText -Document $templateDoc -FindText "<<sales state>>" -ReplaceText $salesState
+Replace-PlaceholderText -Document $templateDoc -FindText "<<sales zip>>" -ReplaceText $salesZip
+Replace-PlaceholderText -Document $templateDoc -FindText "<<sales manager>>" -ReplaceText $salesManagerName
 
 
 
