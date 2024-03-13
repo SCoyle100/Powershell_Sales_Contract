@@ -64,7 +64,7 @@ $shipping = "Shipping\s*Cost\s*for\s*(\d{1,3}) Qty\s*\$\s*([\d\.]+)"
 
 if ($textContent -match $shipping) {
     $quantity = $matches[1]
-    $price = $matches[2]
+    $price = $matches[2]/.85
     "Quantity: $quantity, Price: $price"
 } else {
     "Pattern not found."
@@ -85,6 +85,7 @@ $button26.Size = New-Object System.Drawing.Size(100, 23)
 $button26.Text = "26%"
 $button26.Add_Click({
     $script:marginSelection = 0.74
+    $script:marginSelection_Show = .26
     $form.Close()
 })
 $form.Controls.Add($button26)
@@ -96,6 +97,7 @@ $button35.Size = New-Object System.Drawing.Size(100, 23)
 $button35.Text = "35%"
 $button35.Add_Click({
     $script:marginSelection = 0.65
+    $script:marginSelection_Show = .35
     $form.Close()
 })
 $form.Controls.Add($button35)
@@ -215,14 +217,14 @@ do {
 } while ($retry)
 
 
-$salesName = $Details.Name
-$salesJobTitle = $Details.JobTitle
-$salesStreetAddress = $Details.BusinessAddress
-$salesCity = $Details.BusinessCity
-$salesState = $Details.BusinessState
-$salesZip = $Details.BusinessZip
-$salesPhone = $Details.BusinessPhone
-$salesManagerName = $Details.ManagerName
+$salesName = $UserDetails.Name
+$salesJobTitle = $UserDetails.JobTitle
+$salesStreetAddress = $UserDetails.BusinessAddress
+$salesCity = $UserDetails.BusinessCity
+$salesState = $UserDetails.BusinessState
+$salesZip = $UserDetails.BusinessZip
+$salesPhone = $UserDetails.BusinessPhone
+$salesManagerName = $UserDetails.ManagerName
 
 
 function Convert-NameFormat {
@@ -230,7 +232,7 @@ function Convert-NameFormat {
 
     if ($name -contains ',') {
         $parts = $name -split ','
-        $formattedName = "$($parts[1].Trim()) $($parts[0].Trim())"
+        $formattedName = $($parts[1].Trim()) + " " + $($parts[0].Trim())
     } else {
         $formattedName = $name
     }
@@ -686,11 +688,11 @@ $customerCityStateZip = $customerInfoDT.Rows[2][0]
 $customerPhone = $customerInfoDT.Rows[4][0]
 
 
-$customerCity = $customerCityStateZip -replace ', [A-Z]{2} \d{5}(-\d{4})?|[A-Z]{2} \d{5}(-\d{4})?', ""
+$customerCity = $customerCityStateZip -replace '[A-Z]{2}|\d{5}(-\d{4})?|[A-Z]{2} \d{5}(-\d{4})?', ""
 
 
 # Attempt to match state abbreviation
-if ($customerCityStateZip -match ', ([A-Z]{2}) ') {
+if ($customerCityStateZip -match '([A-Z]{2})') {
     $customerState = $matches[1] # Extract the state abbreviation
 } else {
     $customerState = $null # No match found
@@ -719,14 +721,18 @@ $findText = "<<customer name>>"
 $find = $templateDoc.Content.Find
 $find.ClearFormatting()
 
-# Check if the placeholder text is found in the document
-if ($find.Execute($findText)) {
+# Loop to replace all instances of the placeholder text
+while ($find.Execute($FindText)) {
     # Get the range where the text was found
     $textRange = $find.Parent
 
     # Replace the found text with the variable content
     $textRange.Text = $customerName
+
+    # Reset the search starting point to continue searching the document
+    $find.Wrap = 1 # wdFindContinue
 }
+
 
 # Placeholder text to find
 $findText = "<<customer contact>>"
@@ -736,12 +742,15 @@ $find = $templateDoc.Content.Find
 $find.ClearFormatting()
 
 # Check if the placeholder text is found in the document
-if ($find.Execute($findText)) {
+while ($find.Execute($findText)) {
     # Get the range where the text was found
     $textRange = $find.Parent
 
     # Replace the found text with the variable content
     $textRange.Text = $customerContactName
+
+    # Reset the search starting point to continue searching the document
+    $find.Wrap = 1 # wdFindContinue
 }
 
 
@@ -753,12 +762,15 @@ $find = $templateDoc.Content.Find
 $find.ClearFormatting()
 
 # Check if the placeholder text is found in the document
-if ($find.Execute($findText)) {
+while ($find.Execute($findText)) {
     # Get the range where the text was found
     $textRange = $find.Parent
 
     # Replace the found text with the variable content
     $textRange.Text = $customerEmail
+
+    # Reset the search starting point to continue searching the document
+    $find.Wrap = 1 # wdFindContinue
 }
 
 
@@ -770,12 +782,15 @@ $find = $templateDoc.Content.Find
 $find.ClearFormatting()
 
 # Check if the placeholder text is found in the document
-if ($find.Execute($findText)) {
+while ($find.Execute($findText)) {
     # Get the range where the text was found
     $textRange = $find.Parent
 
     # Replace the found text with the variable content
     $textRange.Text = $customerPhone
+
+    # Reset the search starting point to continue searching the document
+    $find.Wrap = 1 # wdFindContinue
 }
 
 # Placeholder text to find
@@ -786,12 +801,14 @@ $find = $templateDoc.Content.Find
 $find.ClearFormatting()
 
 # Check if the placeholder text is found in the document
-if ($find.Execute($findText)) {
+while ($find.Execute($findText)) {
     # Get the range where the text was found
     $textRange = $find.Parent
 
     # Replace the found text with the variable content
     $textRange.Text = $customerStreet
+
+    $find.Wrap = 1 # wdFindContinue
 }
 
 
@@ -803,12 +820,14 @@ $find = $templateDoc.Content.Find
 $find.ClearFormatting()
 
 # Check if the placeholder text is found in the document
-if ($find.Execute($findText)) {
+while ($find.Execute($findText)) {
     # Get the range where the text was found
     $textRange = $find.Parent
 
     # Replace the found text with the variable content
     $textRange.Text = $customerCity
+
+    $find.Wrap = 1 # wdFindContinue
 }
 
 
@@ -820,12 +839,14 @@ $find = $templateDoc.Content.Find
 $find.ClearFormatting()
 
 # Check if the placeholder text is found in the document
-if ($find.Execute($findText)) {
+while ($find.Execute($findText)) {
     # Get the range where the text was found
     $textRange = $find.Parent
 
     # Replace the found text with the variable content
     $textRange.Text = $customerState
+
+    $find.Wrap = 1 # wdFindContinue
 }
 
 
@@ -837,12 +858,14 @@ $find = $templateDoc.Content.Find
 $find.ClearFormatting()
 
 # Check if the placeholder text is found in the document
-if ($find.Execute($findText)) {
+while ($find.Execute($findText)) {
     # Get the range where the text was found
     $textRange = $find.Parent
 
     # Replace the found text with the variable content
     $textRange.Text = $customerZip
+
+    $find.Wrap = 1 # wdFindContinue
 }
 
 
@@ -854,12 +877,14 @@ $find = $templateDoc.Content.Find
 $find.ClearFormatting()
 
 # Check if the placeholder text is found in the document
-if ($find.Execute($findText)) {
+while ($find.Execute($findText)) {
     # Get the range where the text was found
     $textRange = $find.Parent
 
     # Replace the found text with the variable content
     $textRange.Text = $salesName
+
+    $find.Wrap = 1 # wdFindContinue
 }
 
 # Placeholder text to find
@@ -870,12 +895,15 @@ $find = $templateDoc.Content.Find
 $find.ClearFormatting()
 
 # Check if the placeholder text is found in the document
-if ($find.Execute($findText)) {
+while ($find.Execute($findText)) {
     # Get the range where the text was found
     $textRange = $find.Parent
 
     # Replace the found text with the variable content
     $textRange.Text = $salesStreetAddress
+
+    # Reset the search starting point to continue searching the document
+    $find.Wrap = 1 # wdFindContinue
 }
 
 # Placeholder text to find
@@ -886,12 +914,15 @@ $find = $templateDoc.Content.Find
 $find.ClearFormatting()
 
 # Check if the placeholder text is found in the document
-if ($find.Execute($findText)) {
+while ($find.Execute($findText)) {
     # Get the range where the text was found
     $textRange = $find.Parent
 
     # Replace the found text with the variable content
     $textRange.Text = $salesCity
+
+    # Reset the search starting point to continue searching the document
+    $find.Wrap = 1 # wdFindContinue
 }
 
 # Placeholder text to find
@@ -902,12 +933,15 @@ $find = $templateDoc.Content.Find
 $find.ClearFormatting()
 
 # Check if the placeholder text is found in the document
-if ($find.Execute($findText)) {
+while ($find.Execute($findText)) {
     # Get the range where the text was found
     $textRange = $find.Parent
 
     # Replace the found text with the variable content
     $textRange.Text = $salesState
+
+    # Reset the search starting point to continue searching the document
+    $find.Wrap = 1 # wdFindContinue
 }
 
 # Placeholder text to find
@@ -918,12 +952,15 @@ $find = $templateDoc.Content.Find
 $find.ClearFormatting()
 
 # Check if the placeholder text is found in the document
-if ($find.Execute($findText)) {
+while ($find.Execute($findText)) {
     # Get the range where the text was found
     $textRange = $find.Parent
 
     # Replace the found text with the variable content
     $textRange.Text = $salesZip
+
+    # Reset the search starting point to continue searching the document
+    $find.Wrap = 1 # wdFindContinue
 }
 
 # Placeholder text to find
@@ -934,12 +971,15 @@ $find = $templateDoc.Content.Find
 $find.ClearFormatting()
 
 # Check if the placeholder text is found in the document
-if ($find.Execute($findText)) {
+while ($find.Execute($findText)) {
     # Get the range where the text was found
     $textRange = $find.Parent
 
     # Replace the found text with the variable content
     $textRange.Text = $salesManagerName
+
+    # Reset the search starting point to continue searching the document
+    $find.Wrap = 1 # wdFindContinue
 }
 
 
@@ -1258,7 +1298,7 @@ $specificCells = @(
 )
 
 # State abbreviations
-$stateAbbreviations = @("AL", "AK", "AZ", "AR", "CA", "CO", "CT", "DE", "FL", "GA", "HI", "ID", "IL", "IN", "IA", "KS", "KY", "LA", "ME", "MD", "MA", "MI", "MN", "MS", "MO", "MT", "NE", "NV", "NH", "NJ", "NM", "NY", "NC", "ND", "OH", "OK", "OR", "PA", "RI", "SC", "SD", "TN", "TX", "UT", "VT", "VA", "WA", "WV", "WI", "WY", "USA", "US")
+$stateAbbreviations = @("AL", "AK", "AZ", "AR", "CA", "CO", "CT", "DE", "FL", "GA", "HI", "ID", "IL", "IN", "IA", "KS", "KY", "LA", "ME", "MD", "MA", "MI", "MN", "MS", "MO", "MT", "NE", "NV", "NH", "NJ", "NM", "NY", "NC", "ND", "OH", "OK", "OR", "PA", "RI", "SC", "SD", "TN", "TX", "UT", "VT", "VA", "WA", "WV", "WI", "WY", "USA", "US", "NW", "NE", "SW", "SE")
 
 foreach ($row in $wordTable.Rows) {
     foreach ($cell in $row.Cells) {
@@ -1332,10 +1372,19 @@ $workbook = $excel.Workbooks.Open($excelTemplate)
 $worksheet = $workbook.Sheets.Item("QUOTE SHEET")
 
 # Starting row index in Excel
-$startRowIndex = 15
+$startRowIndex = 16
 
-# Iterate through each row in the DataTable
-for ($i = 0; $i -lt $dtJoined3.Rows.Count; $i++) {
+$numRows = $dtJoined3.Rows.Count
+
+for ($i = 0; $i -lt $numRows; $i++) {
+    $range = $worksheet.Range("A" + ($startRowIndex + $i) + ":B" + ($startRowIndex + $i))
+    $range.EntireRow.Insert([Microsoft.Office.Interop.Excel.XlInsertShiftDirection]::xlShiftDown)
+}
+
+
+
+# Populate the newly created blank rows with the contents of the Datatable
+for ($i = 0; $i -lt $numRows; $i++) {
     # Current row in the DataTable
     $row = $dtJoined3.Rows[$i]
 
@@ -1343,6 +1392,51 @@ for ($i = 0; $i -lt $dtJoined3.Rows.Count; $i++) {
     $worksheet.Cells.Item($startRowIndex + $i, 1) = $row[0].ToString()  # Column A
     $worksheet.Cells.Item($startRowIndex + $i, 2) = $row[1].ToString()  # Column B
 }
+
+$worksheet.Cells.Item(2, 7).Value2 = $customerName
+$worksheet.Cells.Item(3, 7).Value2 = $customerStreet
+$worksheet.Cells.Item(4, 7).Value2 = $customerCityStateZip
+$worksheet.Cells.Item(5, 7).Value2 = $customerContactName
+$worksheet.Cells.Item(6, 7).Value2 = $customerPhone
+
+$worksheet.Cells.Item(8, 7).Value2 = $customerName
+$worksheet.Cells.Item(9, 7).Value2 = $customerStreet
+$worksheet.Cells.Item(10, 7).Value2 = $customerCityStateZip
+$worksheet.Cells.Item(11, 7).Value2 = $customerContactName
+$worksheet.Cells.Item(12, 7).Value2 = $customerPhone
+
+
+
+$worksheet = $workbook.Sheets.Item("FP CALCULATOR")
+
+$startRowIndex = 3
+$startRowIndex_1 = 4
+
+for ($i = 0; $i -lt $dtSKU2; $i++) {
+    # Current row in the DataTable
+    $row = $dtSKU2.Rows[$i]
+
+    # Write data to Excel
+    $worksheet.Cells.Item($startRowIndex_1 + $i, 2) = $row[0].ToString()  
+    $worksheet.Cells.Item($startRowIndex_1 + $i, 4) = $row[2].ToString()
+    $worksheet.Cells.Item($startRowIndex_1 + $i, 6) = $marginSelection_Show
+    $worksheet.Cells.Item($startRowIndex_1 + $i, 8) = $months  
+}
+
+
+
+
+for ($i = 0; $i -lt $dtPrices1.Rows.Count; $i++) {
+    # Current row in the DataTable
+    $row = $dtPrices1.Rows[$i]
+
+    # Write data to Excel
+    $worksheet.Cells.Item($startRowIndex_1 + $i, 3) = $row[1].ToString()  
+    
+}
+
+
+
 
 # Save the workbook as a new file
 $newFilePath = $excelTemplateNew
