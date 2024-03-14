@@ -3,32 +3,16 @@ Add-Type -AssemblyName System.Data.DataSetExtensions
 Add-Type -AssemblyName Microsoft.Office.Interop.Word
 Add-Type -AssemblyName System.Data
 
-# Set the absolute path to your config.ps1 script
-$configPath = "D:\Programming\PowerShell\Sales Contract\config.ps1"
-# Dot source the config script
-. $configPath
 
+# Get the path of the current script (main.ps1)
+$scriptPath = Split-Path -Path $MyInvocation.MyCommand.Definition -Parent
 
-#user input pop ups
-. .\forms.ps1
+# Construct the path to the Modules folder
+$modulesPath = Join-Path -Path $scriptPath -ChildPath "Modules"
 
-#logic for building datatables and capturing names, addresses, etc via regex
-. .\datatables_variables.ps1
-
-
-#Inserting tables and variables into the contract template
-. .\word_insertions.ps1
-
-
-#Inserting information into the excel template and building the FM loader as .xls
-. .\excel_insertions.ps1
-
-
-
-
-
-
-
-
-
-
+# Dot source each module script
+. (Join-Path -Path $modulesPath -ChildPath "config.ps1")
+. (Join-Path -Path $modulesPath -ChildPath "forms.ps1")
+. (Join-Path -Path $modulesPath -ChildPath "datatables_variables.ps1")
+. (Join-Path -Path $modulesPath -ChildPath "word_insertions.ps1")
+. (Join-Path -Path $modulesPath -ChildPath "excel_insertions.ps1")
