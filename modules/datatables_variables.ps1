@@ -364,6 +364,16 @@ $initialRow_final.ItemArray = $initialRowData_final
 $dtJoined3.Rows.InsertAt($initialRow_final, 0)
 
 
+foreach ($row in $dtJoined3.Rows) {
+    if ($row[0] -like "*Total*") {
+        $dtJoined3.Rows.Remove($row)
+        
+        break
+    }
+}
+
+# Accept changes
+$dtJoined3.AcceptChanges()
 
 
 
@@ -371,7 +381,12 @@ $dtJoined3.Rows.InsertAt($initialRow_final, 0)
 
 
 
-## Building and modifying dtSKU DataTable
+
+
+
+### Building and modifying dtSKU2 DataTable ###
+
+
 foreach ($currentMatch in $matchSKU) {
     $row = $dtSKU.NewRow()
     # Apply the regex replacement directly here

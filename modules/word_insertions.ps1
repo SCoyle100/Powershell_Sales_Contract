@@ -136,6 +136,7 @@ for ($i = $startRow; $i -le $wordTable1.Rows.Count; $i++) {
 
 
     
+###Border removal for first and 2nd rows###
 
 # Remove internal vertical borders from the first row
 for ($i = 2; $i -lt $wordTable1.Columns.Count; $i++) {
@@ -157,6 +158,7 @@ for ($i = 2; $i -lt $wordTable1.Columns.Count; $i++) {
     $wordTable1.Cell(3, $i).Borders.Item([Microsoft.Office.Interop.Word.WdBorderType]::wdBorderRight).LineStyle = [Microsoft.Office.Interop.Word.WdLineStyle]::wdLineStyleNone
 }
 
+###End of border removal for first and second rows###
 
 
 
@@ -173,8 +175,9 @@ foreach ($index in $indexArray1) {
     }
 }
 
-foreach ($index in $indexArray1) {
-    $rowIndex = $index + 3 # Adjusting each index as specified (+1)
+for ($j = 0; $j -lt $indexArray1.Count - 1; $j++) {
+    $index = $indexArray1[$j]
+    $rowIndex = $index + 3 # Adjusting each index as specified
     
     # Ensure the row index is within the table's bounds
     if ($rowIndex -le $wordTable1.Rows.Count) {
@@ -185,8 +188,85 @@ foreach ($index in $indexArray1) {
     }
 }
 
-foreach ($index in $indexArray1) {
-    $rowIndex = $index + 4 # Adjusting each index as specified (+1)
+
+#Removing bottom left outer borders
+
+
+# Calculate the starting row for the last 5 rows
+$startRow = $wordTable1.Rows.Count - 5
+
+# Iterate over the last 5 rows
+for ($rowIndex = $startRow; $rowIndex -le $wordTable1.Rows.Count; $rowIndex++) {
+    # Access the first cell of the current row to remove the left border
+    $cell = $wordTable1.Cell($rowIndex, 1)
+
+    # Remove the left border
+    $cell.Borders.Item([Microsoft.Office.Interop.Word.WdBorderType]::wdBorderLeft).LineStyle = [Microsoft.Office.Interop.Word.WdLineStyle]::wdLineStyleNone
+}
+
+
+#$startRow = $wordTable1.Rows.Count - 4
+
+# Iterate over the last 5 rows
+#for ($rowIndex = $startRow; $rowIndex -le $wordTable1.Rows.Count; $rowIndex++) {
+    # Access the first cell of the current row to remove the left border
+#    $cell = $wordTable1.Cell($rowIndex, 3)
+
+    # Remove the left border
+#    $cell.Borders.Item([Microsoft.Office.Interop.Word.WdBorderType]::wdBorderLeft).LineStyle = [Microsoft.Office.Interop.Word.WdLineStyle]::wdLineStyleNone
+#}
+
+
+
+$startRow = $wordTable1.Rows.Count - 5
+
+# Iterate over the last 5 rows
+for ($rowIndex = $startRow; $rowIndex -le $wordTable1.Rows.Count; $rowIndex++) {
+    # Iterate over the first 3 columns
+    for ($colIndex = 1; $colIndex -le 3; $colIndex++) {
+        # Access the cell in the current row and column to remove the specified borders
+        $cell = $wordTable1.Cell($rowIndex, $colIndex)
+
+        # Remove the specified borders for this cell
+        $cell.Borders.Item([Microsoft.Office.Interop.Word.WdBorderType]::wdBorderBottom).LineStyle = [Microsoft.Office.Interop.Word.WdLineStyle]::wdLineStyleNone
+        $cell.Borders.Item([Microsoft.Office.Interop.Word.WdBorderType]::wdBorderVertical).LineStyle = [Microsoft.Office.Interop.Word.WdLineStyle]::wdLineStyleNone
+        $cell.Borders.Item([Microsoft.Office.Interop.Word.WdBorderType]::wdBorderLeft).LineStyle = [Microsoft.Office.Interop.Word.WdLineStyle]::wdLineStyleNone
+    }
+}
+
+
+$startRow = $wordTable1.Rows.Count - 5
+
+# Iterate over the last 5 rows
+for ($rowIndex = $startRow; $rowIndex -le $wordTable1.Rows.Count; $rowIndex++) {
+    # Iterate over the first 3 columns
+    for ($colIndex = 1; $colIndex -le 3; $colIndex++) {
+        # Access the cell in the current row and column to remove the specified borders
+        $cell = $wordTable1.Cell($rowIndex, $colIndex)
+
+        # Remove the specified borders for this cell
+        $cell.Borders.Item([Microsoft.Office.Interop.Word.WdBorderType]::wdBorderBottom).LineStyle = [Microsoft.Office.Interop.Word.WdLineStyle]::wdLineStyleNone
+        $cell.Borders.Item([Microsoft.Office.Interop.Word.WdBorderType]::wdBorderVertical).LineStyle = [Microsoft.Office.Interop.Word.WdLineStyle]::wdLineStyleNone
+    }
+}
+
+
+
+#foreach ($index in $indexArray1) {
+#    $rowIndex = $index + 4 # Adjusting each index as specified (+1)
+    
+    # Ensure the row index is within the table's bounds
+#    if ($rowIndex -le $wordTable1.Rows.Count) {
+        # Loop through all but the last cell in the specified row to remove inner vertical borders
+#        for ($i = 2; $i -lt $wordTable1.Columns.Count; $i++) {
+#            $wordTable1.Cell($rowIndex, $i).Borders.Item([Microsoft.Office.Interop.Word.WdBorderType]::wdBorderRight).LineStyle = [Microsoft.Office.Interop.Word.WdLineStyle]::wdLineStyleNone
+#        }
+#    }
+#}
+
+for ($j = 0; $j -lt $indexArray1.Count - 1; $j++) {
+    $index = $indexArray1[$j]
+    $rowIndex = $index + 4 # Adjusting each index as specified
     
     # Ensure the row index is within the table's bounds
     if ($rowIndex -le $wordTable1.Rows.Count) {
@@ -196,6 +276,47 @@ foreach ($index in $indexArray1) {
         }
     }
 }
+
+
+# Calculate the indices for the 2nd to last and 3rd to last rows
+$secondToLastRow = $wordTable1.Rows.Count - 1
+$thirdToLastRow = $wordTable1.Rows.Count - 2
+
+# Define the columns to modify
+$columnsToModify = 4, 5
+
+# Create an array of the specific rows to modify
+$rowsToModify = @($thirdToLastRow, $secondToLastRow)
+
+foreach ($rowIndex in $rowsToModify) {
+    foreach ($colIndex in $columnsToModify) {
+        # Access the cell in the current row and column to remove the specified borders
+        $cell = $wordTable1.Cell($rowIndex, $colIndex)
+
+        # Remove the left, vertical, and bottom borders for this cell
+        $cell.Borders.Item([Microsoft.Office.Interop.Word.WdBorderType]::wdBorderLeft).LineStyle = [Microsoft.Office.Interop.Word.WdLineStyle]::wdLineStyleNone
+        $cell.Borders.Item([Microsoft.Office.Interop.Word.WdBorderType]::wdBorderVertical).LineStyle = [Microsoft.Office.Interop.Word.WdLineStyle]::wdLineStyleNone
+        #$cell.Borders.Item([Microsoft.Office.Interop.Word.WdBorderType]::wdBorderBottom).LineStyle = [Microsoft.Office.Interop.Word.WdLineStyle]::wdLineStyleNone
+    }
+}
+
+
+# Calculate the index for the 3rd to last row
+$thirdToLastRow = $wordTable1.Rows.Count - 2
+
+# Define the columns from which to remove the bottom border
+$columnsToRemoveBottomBorder = 4, 5
+
+# Iterate over the specified columns
+foreach ($colIndex in $columnsToRemoveBottomBorder) {
+    # Access the cell at the 3rd to last row and current column
+    $cell = $wordTable1.Cell($thirdToLastRow, $colIndex)
+    
+    # Remove the bottom border for this cell
+    $cell.Borders.Item([Microsoft.Office.Interop.Word.WdBorderType]::wdBorderBottom).LineStyle = [Microsoft.Office.Interop.Word.WdLineStyle]::wdLineStyleNone
+}
+
+
 
 
 # Access the first cell in the second row
