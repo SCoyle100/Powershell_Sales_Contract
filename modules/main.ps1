@@ -19,18 +19,18 @@ function Test-PdfFileSelectionForm {
 # Function to test PdfProcessor
 function Test-PdfProcessor {
     $pdfProcessor = [PdfProcessor]::new()
-    $pdfText = $pdfProcessor.ConvertToText('D:\Programming\UiPath\UiPath_Sales Contract_invoke_code\salesQuote_official_2.pdf')  # Specify a test PDF file path here
+    $pdfText = $pdfProcessor.ConvertToText($pdfFilePath)  # Specify a test PDF file path here
     Write-Host "Extracted Text: $pdfText"
 }
 
 # Function to test RegexOperations
 function Test-RegexOperations {
-    $sampleText = "Quotation example text Quoted, Item Description something Final Quote"
-    $quotation = [RegexOperations]::ExtractQuotation($sampleText)
-    $itemDescription = [RegexOperations]::ExtractItemDescription($sampleText)
+    
+    $quotation = [RegexOperations]::ExtractQuotation($textContent)
+    $itemDescription = [RegexOperations]::ExtractItemDescription($textContent)
     $cleanedText = [RegexOperations]::RemovePricingDetails($itemDescription)
-    $paymentTenure = [RegexOperations]::ExtractPaymentTenure($sampleText)
-    $shippingCost = [RegexOperations]::ExtractShippingCost($sampleText)
+    $paymentTenure = [RegexOperations]::ExtractPaymentTenure($textContent)
+    $shippingCost = [RegexOperations]::ExtractShippingCost($textContent)
     Write-Host "Quotation: $quotation"
     Write-Host "Item Description: $itemDescription"
     Write-Host "Cleaned Text: $cleanedText"
