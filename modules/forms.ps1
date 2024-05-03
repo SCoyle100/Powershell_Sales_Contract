@@ -114,18 +114,25 @@ class MarginSelectionForm {
     [void] ShowDialog() {
         $form = New-Object System.Windows.Forms.Form
         $form.Text = "Please Select Margin"
-        $form.Size = New-Object System.Drawing.Size(300, 200)
+        $form.Size = New-Object System.Drawing.Size(400, 300)
         $form.StartPosition = "CenterScreen"
 
         $button26 = New-Object System.Windows.Forms.Button
         $button26.Text = "26%"
+        $button26.Location = New-Object System.Drawing.Point(30, 50)  # Set position
+        $button26.Size = New-Object System.Drawing.Size(100, 23)
         $button26.Add_Click({
             $this.MarginSelection = 0.74
             $this.MarginSelectionShow = 0.26
             $form.Close()
         })
 
+        $form.Controls.Add($button26)
+        
+
         $button35 = New-Object System.Windows.Forms.Button
+        $button35.Location = New-Object System.Drawing.Point(150, 50)  # Set position
+        $button35.Size = New-Object System.Drawing.Size(100, 23)
         $button35.Text = "35%"
         $button35.Add_Click({
             $this.MarginSelection = 0.65
@@ -133,12 +140,14 @@ class MarginSelectionForm {
             $form.Close()
         })
 
-        $form.Controls.Add($button26)
+        
         $form.Controls.Add($button35)
+
+        $form.Add_Shown{{$form.Activate()}}
+        
         $form.ShowDialog() | Out-Null
     }
 }
-
 
 
 class InputDialogWithSkip {

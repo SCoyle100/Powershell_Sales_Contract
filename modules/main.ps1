@@ -59,9 +59,9 @@ function Test-OutlookGALUserDetails {
 }
 
 # Calling test functions
-Test-PdfFileSelectionForm
-Test-PdfProcessor
-Test-RegexOperations
-#Test-MarginSelectionForm
+#Test-PdfFileSelectionForm
+#Test-PdfProcessor
+#Test-RegexOperations
+Test-MarginSelectionForm
 #Test-InputDialogWithSkip
 #Test-OutlookGALUserDetails
