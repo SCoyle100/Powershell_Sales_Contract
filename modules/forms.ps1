@@ -20,7 +20,7 @@ class PdfFileSelectionForm {
     }
 
     [void] ShowInitialMessage() {
-        [Windows.Forms.MessageBox]::Show('SELECT THE PDF QUOTE', '')
+        [System.Windows.Forms.MessageBox]::Show('SELECT THE PDF QUOTE', '')
     }
 }
 
@@ -155,36 +155,36 @@ class InputDialogWithSkip {
         $form.Text = $this.WindowTitle
         $form.Size = New-Object System.Drawing.Size(300,200)
         $form.StartPosition = "CenterScreen"
-
+    
         $label = New-Object System.Windows.Forms.Label
         $label.Text = $this.Message
         $label.Location = New-Object System.Drawing.Point(10,20)
         $label.Size = New-Object System.Drawing.Size(280,20)
-
+    
         $textBox = New-Object System.Windows.Forms.TextBox
         $textBox.Location = New-Object System.Drawing.Point(10,40)
         $textBox.Size = New-Object System.Drawing.Size(260,20)
-
+    
         $okButton = New-Object System.Windows.Forms.Button
         $okButton.Text = "OK"
         $okButton.DialogResult = [System.Windows.Forms.DialogResult]::OK
-
+    
         $skipButton = New-Object System.Windows.Forms.Button
         $skipButton.Text = "Skip"
         $skipButton.DialogResult = [System.Windows.Forms.DialogResult]::Cancel
-
+    
         $form.Controls.Add($label)
         $form.Controls.Add($textBox)
         $form.Controls.Add($okButton)
         $form.Controls.Add($skipButton)
-
+    
         $form.AcceptButton = $okButton
         $form.CancelButton = $skipButton
-
+    
         $result = $form.ShowDialog()
         if ($result -eq [System.Windows.Forms.DialogResult]::OK) {
             return $textBox.Text
-        } elseif ($result -eq [System.Windows.Forms.DialogResult]::Cancel) {
+        } else {
             return $null
         }
     }
@@ -238,28 +238,47 @@ class OutlookGALUserDetails {
         }
     }
 
-    [void] GetUserDetailsLoop() {
-        do {
-            $emailAddress = $this.ShowInputDialog("Enter the User ID (Email Address) of the person:", "User ID Input")
-            if ($null -eq $emailAddress) {
-                Write-Output "User skipped input."
-                break
-            }
-
-            $UserDetails = $this.GetGALUserDetails($emailAddress)
-
-            if ($UserDetails) {
-                [System.Windows.Forms.MessageBox]::Show("Name: $($UserDetails.Name)`nJob Title: $($UserDetails.JobTitle)`nBusiness Address: $($UserDetails.BusinessAddress)`nBusiness Phone: $($UserDetails.BusinessPhone)`nManager Name: $($UserDetails.ManagerName)", "User Details")
-                $retry = $false
-            } else {
-                $retry = $true
-                [System.Windows.Forms.MessageBox]::Show("No details found for $emailAddress. Would you like to retry?", "Error", [System.Windows.Forms.MessageBoxButtons]::RetryCancel) -eq [System.Windows.Forms.DialogResult]::Retry
-            }
-        } while ($retry)
-    }
-
     [string] ShowInputDialog([string] $message, [string] $title) {
-        Add-Type -AssemblyName Microsoft.VisualBasic
-        return [Microsoft.VisualBasic.Interaction]::InputBox($message, $title)
+        $form = New-Object System.Windows.Forms.Form
+        $form.Text = $title
+        $form.Size = New-Object System.Drawing.Size(300,200)
+        $form.StartPosition = "CenterScreen"
+    
+        $label = New-Object System.Windows.Forms.Label
+        $label.Text = $message
+        $label.Location = New-Object System.Drawing.Point(10,20)
+        $label.Size = New-Object System.Drawing.Size(280,20)
+    
+        $textBox = New-Object System.Windows.Forms.TextBox
+        $textBox.Location = New-Object System.Drawing.Point(10,40)
+        $textBox.Size = New-Object System.Drawing.Size(260,20)
+    
+        $okButton = New-Object System.Windows.Forms.Button
+        $okButton.Text = "OK"
+        $okButton.Location = New-Object System.Drawing.Point(10,70)
+        $okButton.Size = New-Object System.Drawing.Size(75,23)
+        $okButton.DialogResult = [System.Windows.Forms.DialogResult]::OK
+    
+        $cancelButton = New-Object System.Windows.Forms.Button
+        $cancelButton.Text = "Cancel"
+        $cancelButton.Location = New-Object System.Drawing.Point(195,70)
+        $cancelButton.Size = New-Object System.Drawing.Size(75,23)
+        $cancelButton.DialogResult = [System.Windows.Forms.DialogResult]::Cancel
+    
+        $form.Controls.Add($label)
+        $form.Controls.Add($textBox)
+        $form.Controls.Add($okButton)
+        $form.Controls.Add($cancelButton)
+    
+        $form.AcceptButton = $okButton
+        $form.CancelButton = $cancelButton
+    
+        $result = $form.ShowDialog()
+        if ($result -eq [System.Windows.Forms.DialogResult]::OK) {
+            return $textBox.Text
+        } else {
+            return $null
+        }
     }
+
 }

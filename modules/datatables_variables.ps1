@@ -1,3 +1,15 @@
+#Refactor notes - for now, I would just declare the variables up here
+#based off of the methods from the classes in forms, and then work from there. 
+#I'm guessing the classes in this module will take the declared variables.
+
+$regex0 = [RegexOperations]::ExtractQuotation($textContent)
+$regex1 = [RegexOperations]::ExtractItemDescription($textContent)
+$regex2 = [RegexOperations]::RemovePricingDetails($regex1)
+$tenure = [RegexOperations]::ExtractPaymentTenure($textContent)
+$shippingInfo = [RegexOperations]::ExtractShippingCost($textContent)
+
+
+
 $salesName = $UserDetails.Name
 $salesJobTitle = $UserDetails.JobTitle
 $salesStreetAddress = $UserDetails.BusinessAddress
