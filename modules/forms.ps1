@@ -42,7 +42,8 @@ class PdfProcessor {
         $outputTxtPath = [System.IO.Path]::ChangeExtension($pdfFilePath, '.txt')
         & $this.PdfToTextPath -table $pdfFilePath $outputTxtPath
         if (Test-Path $outputTxtPath) {
-            return Get-Content $outputTxtPath -Raw
+            $pdfText = Get-Content $outputTxtPath -Raw
+            return $pdfText
         } else {
             Write-Host "Failed to convert PDF to text."
             return $null
@@ -55,7 +56,7 @@ class PdfProcessor {
 
 class RegexOperations {
     static [string] ExtractQuotation([string] $pdfText) {
-        if ($pdfText -match "Quotation[\s\S]+?THANK") {
+        if ($pdfText -match "Quotation[\s\S]+?Quoted") {
             return $matches[0]
         } else {
             return "Pattern not found"
