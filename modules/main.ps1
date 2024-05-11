@@ -63,11 +63,11 @@ function Test-OutlookGALUserDetails {
 }
 
 # Calling test functions
-Test-PdfProcessor
-Test-RegexOperations $pdfText
+#Test-PdfProcessor
+#Test-RegexOperations $pdfText
 #Test-MarginSelectionForm
-#Test-InputDialogWithSkip
-#Test-OutlookGALUserDetails
+Test-InputDialogWithSkip
+Test-OutlookGALUserDetails
 
 
 $regex0 = [RegexOperations]::ExtractQuotation($pdfText)
