@@ -55,10 +55,10 @@ class PdfProcessor {
 
 class RegexOperations {
     static [string] ExtractQuotation([string] $pdfText) {
-        if ($pdfText -match "Quotation[\s\S]+?Quoted") {
+        if ($pdfText -match "Quotation[\s\S]+?THANK") {
             return $matches[0]
         } else {
-            return ""
+            return "Pattern not found"
         }
     }
 
@@ -66,7 +66,7 @@ class RegexOperations {
         if ($pdfText -match "Item Description[\s\S]+?Final Quote") {
             return $matches[0]
         } else {
-            return ""
+            return "Pattern not found"
         }
     }
 

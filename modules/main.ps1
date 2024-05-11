@@ -25,7 +25,7 @@ function Test-PdfProcessor {
 # Function to test RegexOperations
 function Test-RegexOperations {
 
-    #param([string] $pdfText)
+    param([string] $pdfText) #this passes the variable pdfText into this function, otherwise, it would be bound to the local scope in the function where it was declared
     
     $quotation = [RegexOperations]::ExtractQuotation($pdfText)
     $itemDescription = [RegexOperations]::ExtractItemDescription($pdfText)
@@ -62,26 +62,24 @@ function Test-OutlookGALUserDetails {
     $outlookDetails.GetUserDetailsLoop()
 }
 
-# Calling test functions
-#Test-PdfProcessor
+
+
+$pdfText = Test-PdfProcessor
+if ($null -ne $pdfText) {
+    Test-RegexOperations $pdfText
+}
+
+Test-RegexOperations $pdfText
+
+
+
+
 #Test-RegexOperations $pdfText
 #Test-MarginSelectionForm
-Test-InputDialogWithSkip
-Test-OutlookGALUserDetails
-
-
-$regex0 = [RegexOperations]::ExtractQuotation($pdfText)
-$regex1 = [RegexOperations]::ExtractItemDescription($pdfText)
-$regex2 = [RegexOperations]::RemovePricingDetails($regex1)
-$tenure = [RegexOperations]::ExtractPaymentTenure($pdfText)
-$shippingInfo = [RegexOperations]::ExtractShippingCost($pdfText)
+#Test-InputDialogWithSkip
+#Test-OutlookGALUserDetails
 
 
 
-Write-Host $regex0
-Write-Host $regex1
-Write-Host $regex2
-Write-Host $tenure
-Write-Host $shippingInfo
 
 
