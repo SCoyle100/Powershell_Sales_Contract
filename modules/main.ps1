@@ -8,34 +8,38 @@ Add-Type -AssemblyName Microsoft.Office.Interop.Outlook
 
 
 
-
-# Function to test PdfFileSelectionForm
-function Test-PdfFileSelectionForm {
+function Test-PdfProcessor {
     $pdfForm = [PdfFileSelectionForm]::new()
     $selectedFile = $pdfForm.SelectFile()
-    Write-Host "Selected PDF File: $selectedFile"
-}
+    Write-Host "Selected PDF File: $selectedFile"  # Debug output
 
-# Function to test PdfProcessor
-function Test-PdfProcessor {
-    $pdfProcessor = [PdfProcessor]::new()
-    $pdfText = $pdfProcessor.ConvertToText($pdfFilePath)  # Specify a test PDF file path here
-    Write-Host "Extracted Text: $pdfText"
+    if (-not [string]::IsNullOrWhiteSpace($selectedFile)) {
+        $pdfProcessor = [PdfProcessor]::new()
+        $pdfText = $pdfProcessor.ConvertToText($selectedFile)
+        Write-Host "Extracted Text: $pdfText"
+    } else {
+        Write-Host "No PDF file selected or file path is empty."
+    }
 }
 
 # Function to test RegexOperations
 function Test-RegexOperations {
+
+    #param([string] $pdfText)
     
-    $quotation = [RegexOperations]::ExtractQuotation($textContent)
-    $itemDescription = [RegexOperations]::ExtractItemDescription($textContent)
+    $quotation = [RegexOperations]::ExtractQuotation($pdfText)
+    $itemDescription = [RegexOperations]::ExtractItemDescription($pdfText)
     $cleanedText = [RegexOperations]::RemovePricingDetails($itemDescription)
-    $paymentTenure = [RegexOperations]::ExtractPaymentTenure($textContent)
-    $shippingCost = [RegexOperations]::ExtractShippingCost($textContent)
+    $paymentTenure = [RegexOperations]::ExtractPaymentTenure($pdfText)
+    $shippingCost = [RegexOperations]::ExtractShippingCost($pdfText)
     Write-Host "Quotation: $quotation"
     Write-Host "Item Description: $itemDescription"
     Write-Host "Cleaned Text: $cleanedText"
     Write-Host "Payment Tenure: $paymentTenure"
     Write-Host "Shipping Cost: $shippingCost"
+
+
+   
 }
 
 # Function to test MarginSelectionForm
@@ -47,7 +51,7 @@ function Test-MarginSelectionForm {
 
 # Function to test InputDialogWithSkip
 function Test-InputDialogWithSkip {
-    $inputDialog = [InputDialogWithSkip]::new('Enter your name:', 'Name Input')
+    $inputDialog = [InputDialogWithSkip]::new('Enter email address or UID:', 'Name Input')
     $inputResult = $inputDialog.ShowDialog()
     Write-Host "Input Result: $inputResult"
 }
@@ -59,9 +63,25 @@ function Test-OutlookGALUserDetails {
 }
 
 # Calling test functions
-#Test-PdfFileSelectionForm
-#Test-PdfProcessor
-#Test-RegexOperations
-Test-MarginSelectionForm
+Test-PdfProcessor
+Test-RegexOperations $pdfText
+#Test-MarginSelectionForm
 #Test-InputDialogWithSkip
 #Test-OutlookGALUserDetails
+
+
+$regex0 = [RegexOperations]::ExtractQuotation($pdfText)
+$regex1 = [RegexOperations]::ExtractItemDescription($pdfText)
+$regex2 = [RegexOperations]::RemovePricingDetails($regex1)
+$tenure = [RegexOperations]::ExtractPaymentTenure($pdfText)
+$shippingInfo = [RegexOperations]::ExtractShippingCost($pdfText)
+
+
+
+Write-Host $regex0
+Write-Host $regex1
+Write-Host $regex2
+Write-Host $tenure
+Write-Host $shippingInfo
+
+

@@ -35,6 +35,10 @@ class PdfProcessor {
     }
 
     [string] ConvertToText([string] $pdfFilePath) {
+        if ([string]::IsNullOrWhiteSpace($pdfFilePath)) {
+            Write-Host "PDF file path is empty."
+            return $null
+        }
         $outputTxtPath = [System.IO.Path]::ChangeExtension($pdfFilePath, '.txt')
         & $this.PdfToTextPath -table $pdfFilePath $outputTxtPath
         if (Test-Path $outputTxtPath) {
@@ -47,42 +51,43 @@ class PdfProcessor {
 }
 
 
+#may need to replace $pdfText with $textContent
 
 class RegexOperations {
-    static [string] ExtractQuotation([string] $textContent) {
-        if ($textContent -match "Quotation[\s\S]+?Quoted") {
+    static [string] ExtractQuotation([string] $pdfText) {
+        if ($pdfText -match "Quotation[\s\S]+?Quoted") {
             return $matches[0]
         } else {
             return ""
         }
     }
 
-    static [string] ExtractItemDescription([string] $textContent) {
-        if ($textContent -match "Item Description[\s\S]+?Final Quote") {
+    static [string] ExtractItemDescription([string] $pdfText) {
+        if ($pdfText -match "Item Description[\s\S]+?Final Quote") {
             return $matches[0]
         } else {
             return ""
         }
     }
 
-    static [string] RemovePricingDetails([string] $textContent) {
-        return $textContent -replace "\d+\s*\d{1,3},\d{3}\.\d{2}\s*\s*\d{1,3},\d{3}\.\d{2}\s*\d{1,3}\.\d{2}|\d+\s*\d{3}\.\d{2}\s*\s*\d{3}\.\d{2}\s*\d{1,3}\.\d{2}|\d+\s*\d{3}\.\d{2}\s*\s*\d{1,3},\d{3}\.\d{2}\s*\d{1,3}\.\d{2}|\[[^\]]*\]|\$\s*\d+\s*\d*\.\d{2}|\d+\s+\d{1,3}(,\d{3})*\.\d{2}\s+\d{1,3}(,\d{3})*\.\d{2}\s+\d{1,3}(,\d{3})*\.\d{2}", ""
+    static [string] RemovePricingDetails([string] $pdfText) {
+        return $pdfText -replace "\d+\s*\d{1,3},\d{3}\.\d{2}\s*\s*\d{1,3},\d{3}\.\d{2}\s*\d{1,3}\.\d{2}|\d+\s*\d{3}\.\d{2}\s*\s*\d{3}\.\d{2}\s*\d{1,3}\.\d{2}|\d+\s*\d{3}\.\d{2}\s*\s*\d{1,3},\d{3}\.\d{2}\s*\d{1,3}\.\d{2}|\[[^\]]*\]|\$\s*\d+\s*\d*\.\d{2}|\d+\s+\d{1,3}(,\d{3})*\.\d{2}\s+\d{1,3}(,\d{3})*\.\d{2}\s+\d{1,3}(,\d{3})*\.\d{2}", ""
     }
 
-    static [string] ExtractPaymentTenure([string] $textContent) {
+    static [string] ExtractPaymentTenure([string] $pdfText) {
         $term = "Payment Tenure\s*:\s*(\d+)\s*Months"
-        if ($textContent -match $term) {
-            return "Tenure: $($matches[1]) months"
+        if ($pdfText -match $term) {
+            return "Tenure: $($matches[0]) months"
         } else {
             return "Pattern not found."
         }
     }
 
-    static [string] ExtractShippingCost([string] $textContent) {
+    static [string] ExtractShippingCost([string] $pdfText) {
         $shipping = "Shipping\s*Cost\s*for\s*(\d{1,3}) Qty\s*\$\s*([\d\.]+)"
-        if ($textContent -match $shipping) {
-            $quantity = $matches[1]
-            $price = [double]$matches[2] / 0.85
+        if ($pdfText -match $shipping) {
+            $quantity = $matches[1] #this was 1 before? 
+            $price = [double]$matches[2] / 0.85 #try using 1 or 2 here? this was 2 before
             return "Quantity: $quantity, Price: $price"
         } else {
             return "Pattern not found."
@@ -94,11 +99,11 @@ class RegexOperations {
 
 #Sample usage for regex variables
 # Assuming $textContent is defined and contains the text extracted from a PDF
-#$regex0 = [RegexOperations]::ExtractQuotation($textContent)
-#$regex1 = [RegexOperations]::ExtractItemDescription($textContent)
+#$regex0 = [RegexOperations]::ExtractQuotation($pdfText)
+#$regex1 = [RegexOperations]::ExtractItemDescription($pdfText)
 #$regex2 = [RegexOperations]::RemovePricingDetails($regex1)
-#$tenure = [RegexOperations]::ExtractPaymentTenure($textContent)
-#$shippingInfo = [RegexOperations]::ExtractShippingCost($textContent)
+#$tenure = [RegexOperations]::ExtractPaymentTenure($pdfText)
+#$shippingInfo = [RegexOperations]::ExtractShippingCost($pdfText)
 
 
 
@@ -173,22 +178,33 @@ class InputDialogWithSkip {
         $textBox = New-Object System.Windows.Forms.TextBox
         $textBox.Location = New-Object System.Drawing.Point(10,40)
         $textBox.Size = New-Object System.Drawing.Size(260,20)
-    
+
+        # OK button creation similar to MarginSelectionForm
         $okButton = New-Object System.Windows.Forms.Button
         $okButton.Text = "OK"
-        $okButton.DialogResult = [System.Windows.Forms.DialogResult]::OK
+        $okButton.Location = New-Object System.Drawing.Point(30, 70)
+        $okButton.Size = New-Object System.Drawing.Size(100, 23)
+        $okButton.Add_Click({
+            $form.DialogResult = [System.Windows.Forms.DialogResult]::OK
+            $form.Close()
+        })
     
+        # Skip button creation similar to MarginSelectionForm
         $skipButton = New-Object System.Windows.Forms.Button
         $skipButton.Text = "Skip"
-        $skipButton.DialogResult = [System.Windows.Forms.DialogResult]::Cancel
+        $skipButton.Location = New-Object System.Drawing.Point(160, 70)
+        $skipButton.Size = New-Object System.Drawing.Size(100, 23)
+        $skipButton.Add_Click({
+            $form.DialogResult = [System.Windows.Forms.DialogResult]::Cancel
+            $form.Close()
+        })
     
         $form.Controls.Add($label)
         $form.Controls.Add($textBox)
         $form.Controls.Add($okButton)
         $form.Controls.Add($skipButton)
-    
-        $form.AcceptButton = $okButton
-        $form.CancelButton = $skipButton
+        
+        $form.Add_Shown({$form.Activate()})
     
         $result = $form.ShowDialog()
         if ($result -eq [System.Windows.Forms.DialogResult]::OK) {
