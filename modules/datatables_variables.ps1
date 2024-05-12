@@ -2,40 +2,14 @@
 #based off of the methods from the classes in forms, and then work from there. 
 #I'm guessing the classes in this module will take the declared variables.
 
-$regex0 = [RegexOperations]::ExtractQuotation($textContent)
-$regex1 = [RegexOperations]::ExtractItemDescription($textContent)
+$regex0 = [RegexOperations]::ExtractQuotation($pdfText)
+$regex1 = [RegexOperations]::ExtractItemDescription($pdfText)
 $regex2 = [RegexOperations]::RemovePricingDetails($regex1)
-$tenure = [RegexOperations]::ExtractPaymentTenure($textContent)
-$shippingInfo = [RegexOperations]::ExtractShippingCost($textContent)
+$tenure = [RegexOperations]::ExtractPaymentTenure($pdfText)
+$shippingInfo = [RegexOperations]::ExtractShippingCost($pdfText)
 
 
 
-$salesName = $UserDetails.Name
-$salesJobTitle = $UserDetails.JobTitle
-$salesStreetAddress = $UserDetails.BusinessAddress
-$salesCity = $UserDetails.BusinessCity
-$salesState = $UserDetails.BusinessState
-$salesZip = $UserDetails.BusinessZip
-$salesPhone = $UserDetails.BusinessPhone
-$salesManagerName = $UserDetails.ManagerName
-
-
-function Convert-NameFormat {
-    param([string]$name)
-
-    if ($name -contains ',') {
-        $parts = $name -split ','
-        $formattedName = $($parts[1].Trim()) + " " + $($parts[0].Trim())
-    } else {
-        $formattedName = $name
-    }
-
-    return $formattedName
-}
-
-# Assuming you have $Name and $ManagerName variables already populated
-$salesName = Convert-NameFormat -name $salesName
-$salesManagerName = Convert-NameFormat -name $salesManagerName
 
 
 
@@ -56,6 +30,53 @@ $sitesStatesRegex2 = [regex]::Matches($regex2, "^.*", [System.Text.RegularExpres
 # Print the $sitesStatesRegex2 variable to the terminal
 #Write-Host "`nSites States Regex2:"
 #$sitesStatesRegex2 | ForEach-Object { Write-Host $_ }
+
+class DataTableManager {
+    static [System.Data.DataTable] CreateCustomerInfoDT() {
+        $dt = New-Object System.Data.DataTable
+        $dt.Columns.Add("Column1", [string])
+        return $dt
+    }
+
+    static [System.Data.DataTable] CreateSitesStatesDT() {
+        $dt = New-Object System.Data.DataTable
+        $dt.Columns.Add("Column1", [string])
+        return $dt
+    }
+
+    static [System.Data.DataTable] CreatePricesDT() {
+        $dt = New-Object System.Data.DataTable
+        $dt.Columns.Add("Qty", [decimal])
+        $dt.Columns.Add("List Price", [decimal])
+        $dt.Columns.Add("Total Price", [decimal])
+        $dt.Columns.Add("MRC", [decimal])
+        return $dt
+    }
+
+    # Add more methods for other DataTables as needed
+}
+
+
+
+class DataTableOperations {
+    static [void] AddRowToDataTable([System.Data.DataTable] $dt, [string] $data) {
+        $dt.Rows.Add($data)
+    }
+
+    static [System.Data.DataTable] FilterDataTable([System.Data.DataTable] $dt, [string] $filterCriteria) {
+        $filteredDT = $dt.Clone()
+        foreach ($row in $dt.Rows) {
+            if ($row["Column1"] -like $filterCriteria) {
+                $filteredDT.ImportRow($row)
+            }
+        }
+        return $filteredDT
+    }
+
+    # Add more methods for other operations as needed
+}
+
+
 
 
 # Creating Data Tables

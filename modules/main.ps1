@@ -16,10 +16,29 @@ function Test-PdfProcessor {
     if (-not [string]::IsNullOrWhiteSpace($selectedFile)) {
         $pdfProcessor = [PdfProcessor]::new()
         $pdfText = $pdfProcessor.ConvertToText($selectedFile)
-        Write-Host "Extracted Text: $pdfText"
+
+        return $pdfText # This needs to be returned in order to be accessed from other functions in this main script
+        #Write-Host "Extracted Text: $pdfText"
+
+        #$quotation = [RegexOperations]::ExtractQuotation($pdfText)
+
+        $quotation2 = [RegexOperations]::ExtractItemDescription($pdfText)
+
+        $quotation3 = [RegexOperations]::RemovePricingDetails($pdfText)
+
+
+        #Write-Host "REGEX CLASS WORKS!: $quotation"
+
+        Write-Host "REGEX CLASS WORKS!: $quotation2"
+
+        Write-Host "REGEX CLASS WORKS!: $quotation3"
+
+
     } else {
         Write-Host "No PDF file selected or file path is empty."
     }
+
+
 }
 
 # Function to test RegexOperations
@@ -32,6 +51,7 @@ function Test-RegexOperations {
     $cleanedText = [RegexOperations]::RemovePricingDetails($itemDescription)
     $paymentTenure = [RegexOperations]::ExtractPaymentTenure($pdfText)
     $shippingCost = [RegexOperations]::ExtractShippingCost($pdfText)
+
     Write-Host "Quotation: $quotation"
     Write-Host "Item Description: $itemDescription"
     Write-Host "Cleaned Text: $cleanedText"
@@ -64,12 +84,36 @@ function Test-OutlookGALUserDetails {
 
 
 
-$pdfText = Test-PdfProcessor
-if ($null -ne $pdfText) {
-    Test-RegexOperations $pdfText
+# Function to test RegexOperations
+function Test-RegexOperations_2 {
+    param([string] $pdfText) #this passes the variable pdfText into this function, otherwise, it would be bound to the local scope in the function where it was declared
+    
+    Write-Host "Debug: Testing RegexOperations with text length: $($pdfText.Length)"  # Debug output to confirm function call and text length
+
+    $quotation = [RegexOperations]::ExtractQuotation($pdfText)
+    $itemDescription = [RegexOperations]::ExtractItemDescription($pdfText)
+    
+
+    Write-Host $quotation
+    Write-Host $itemDescription
 }
 
+
+
+
+
+
+$pdfText = Test-PdfProcessor
+
+
+
+
+
+
 Test-RegexOperations $pdfText
+
+#Test-RegexOperations_2 $pdfText
+
 
 
 

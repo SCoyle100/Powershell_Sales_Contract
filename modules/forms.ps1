@@ -35,6 +35,7 @@ class PdfProcessor {
     }
 
     [string] ConvertToText([string] $pdfFilePath) {
+        Write-Host "Debug: ConvertToText called"
         if ([string]::IsNullOrWhiteSpace($pdfFilePath)) {
             Write-Host "PDF file path is empty."
             return $null
@@ -43,22 +44,37 @@ class PdfProcessor {
         & $this.PdfToTextPath -table $pdfFilePath $outputTxtPath
         if (Test-Path $outputTxtPath) {
             $pdfText = Get-Content $outputTxtPath -Raw
+            Write-Host "Debug: Extracted text length is $($pdfText.Length)"
             return $pdfText
         } else {
             Write-Host "Failed to convert PDF to text."
             return $null
         }
     }
+
+    static [string] ExtractQuotation([string] $pdfText) {
+        Write-Host "Debug: Extracting Quotation from text"  # Debug output
+        if ($pdfText -match "Quotation[\s\S]+?BUSINESS") {
+            return $matches[0]
+        } else {
+            Write-Host "Debug: Pattern not found in text"  # Debug output
+            return "Pattern not found"
+        }
+    }
 }
+
 
 
 #may need to replace $pdfText with $textContent
 
 class RegexOperations {
     static [string] ExtractQuotation([string] $pdfText) {
-        if ($pdfText -match "Quotation[\s\S]+?Quoted") {
+        Write-Host "Debug: Extracting Quotation from text"  # Debug output
+
+        if ($pdfText -match "Quotation[\s\S]+?BUSINESS") {
             return $matches[0]
         } else {
+            Write-Host "Debug: Pattern not found in text"  # Debug output
             return "Pattern not found"
         }
     }
@@ -307,4 +323,36 @@ class OutlookGALUserDetails {
         }
     }
 
+    [string] Convert-NameFormat([string] $name) {
+    if ($name -like '*,*') {
+        $parts = $name -split ','
+        $formattedName = $($parts[1].Trim()) + " " + $($parts[0].Trim())
+    } else {
+        $formattedName = $name
+    }
+        return $formattedName
+    }
+
+
+    [void] ProcessSalesDetails([PSObject] $UserDetails) {
+        $salesName = $UserDetails.Name
+        $salesJobTitle = $UserDetails.JobTitle
+        $salesStreetAddress = $UserDetails.BusinessAddress
+        $salesCity = $UserDetails.BusinessCity
+        $salesState = $UserDetails.BusinessState
+        $salesZip = $UserDetails.BusinessZip
+        $salesPhone = $UserDetails.BusinessPhone
+        $salesManagerName = $UserDetails.ManagerName
+
+        # Convert names to preferred format
+        $salesName = $this.Convert-NameFormat($salesName)
+        $salesManagerName = $this.Convert-NameFormat($salesManagerName)
+
+        # Additional logic to use these details can be added here
+    }
 }
+
+
+    
+
+
