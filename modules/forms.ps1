@@ -66,66 +66,6 @@ class PdfProcessor {
 
 
 
-#I think we need a separate script just for regex operations
-class RegexOperations {
-
-    static [string] ExtractQuotation([string] $pdfText) {
-
-        #I believe this is to build the $customerInfoDT table
-
-        Write-Host "Debug: Extracting Quotation from text"  # Debug output
-
-        if ($pdfText -match "Quotation[\s\S]+?Quoted") {
-            return $matches[0]
-        } else {
-            Write-Host "Debug: Pattern not found in text"  # Debug output
-            return "Pattern not found"
-        }
-    }
-
-    static [string] ExtractItemDescription([string] $pdfText) {
-        if ($pdfText -match "Item Description[\s\S]+?Final Quote") {
-            return $matches[0]
-        } else {
-            return "Pattern not found"
-        }
-    }
-
-    static [string] RemovePricingDetails([string] $pdfText) {
-        return $pdfText -replace "\d+\s*\d{1,3},\d{3}\.\d{2}\s*\s*\d{1,3},\d{3}\.\d{2}\s*\d{1,3}\.\d{2}|\d+\s*\d{3}\.\d{2}\s*\s*\d{3}\.\d{2}\s*\d{1,3}\.\d{2}|\d+\s*\d{3}\.\d{2}\s*\s*\d{1,3},\d{3}\.\d{2}\s*\d{1,3}\.\d{2}|\[[^\]]*\]|\$\s*\d+\s*\d*\.\d{2}|\d+\s+\d{1,3}(,\d{3})*\.\d{2}\s+\d{1,3}(,\d{3})*\.\d{2}\s+\d{1,3}(,\d{3})*\.\d{2}", ""
-    }
-
-    static [string] ExtractPaymentTenure([string] $pdfText) {
-        $term = "Payment Tenure\s*:\s*(\d+)\s*Months"
-        if ($pdfText -match $term) {
-            return "Tenure: $($matches[0]) months"
-        } else {
-            return "Pattern not found."
-        }
-    }
-
-    static [string] ExtractShippingCost([string] $pdfText) {
-        $shipping = "Shipping\s*Cost\s*for\s*(\d{1,3}) Qty\s*\$\s*([\d\.]+)"
-        if ($pdfText -match $shipping) {
-            $quantity = $matches[1] #this was 1 before? 
-            $price = [double]$matches[2] / 0.85 #try using 1 or 2 here? this was 2 before
-            return "Quantity: $quantity, Price: $price"
-        } else {
-            return "Pattern not found."
-        }
-    }
-}
-
-
-
-#Sample usage for regex variables
-# Assuming $textContent is defined and contains the text extracted from a PDF
-#$regex0 = [RegexOperations]::ExtractQuotation($pdfText)
-#$regex1 = [RegexOperations]::ExtractItemDescription($pdfText)
-#$regex2 = [RegexOperations]::RemovePricingDetails($regex1)
-#$tenure = [RegexOperations]::ExtractPaymentTenure($pdfText)
-#$shippingInfo = [RegexOperations]::ExtractShippingCost($pdfText)
-
 
 
 class MarginSelectionForm {
@@ -327,7 +267,7 @@ class OutlookGALUserDetails {
         }
     }
 
-    [string] Convert-NameFormat([string] $name) {
+    [string] ConvertNameFormat([string] $name) {
         if ($name -like '*,*') {
             $parts = $name -split ','
             $formattedName = $($parts[1].Trim()) + " " + $($parts[0].Trim())
@@ -336,6 +276,7 @@ class OutlookGALUserDetails {
             return $name
         }
     }
+    
 
 
 
@@ -350,8 +291,8 @@ class OutlookGALUserDetails {
         $salesManagerName = $UserDetails.ManagerName
 
         # Convert names to preferred format
-        $salesName = $this.Convert-NameFormat($salesName)
-        $salesManagerName = $this.Convert-NameFormat($salesManagerName)
+        $salesName = $this.ConvertNameFormat($salesName)
+        $salesManagerName = $this.ConvertNameFormat($salesManagerName)
 
         # Additional logic to use these details can be added here
     }

@@ -111,7 +111,7 @@ $pdfText = Test-PdfProcessor
 
 
 
-#Test-RegexOperations $pdfText
+Test-RegexOperations $pdfText
 
 #Test-RegexOperations_2 $pdfText
 
