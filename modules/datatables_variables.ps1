@@ -2,6 +2,9 @@
 #based off of the methods from the classes in forms, and then work from there. 
 #I'm guessing the classes in this module will take the declared variables.
 
+
+. "$PSScriptRoot\forms.ps1"
+
 $regex0 = [RegexOperations]::ExtractQuotation($pdfText)
 $regex1 = [RegexOperations]::ExtractItemDescription($pdfText)
 $regex2 = [RegexOperations]::RemovePricingDetails($regex1)
@@ -31,6 +34,14 @@ $sitesStatesRegex2 = [regex]::Matches($regex2, "^.*", [System.Text.RegularExpres
 #Write-Host "`nSites States Regex2:"
 #$sitesStatesRegex2 | ForEach-Object { Write-Host $_ }
 
+
+
+#In PowerShell, when you declare a variable within a method, its scope is local to that method 
+#unless explicitly defined otherwise. Each method in the DataTableManager class creates and 
+#returns a new System.Data.DataTable object, and the $dt variable is local to each method. 
+#This means that each method's $dt variable is separate and does not interfere with others, 
+#even though they are named the same.
+
 class DataTableManager {
     static [System.Data.DataTable] CreateCustomerInfoDT() {
         $dt = New-Object System.Data.DataTable
@@ -38,13 +49,19 @@ class DataTableManager {
         return $dt
     }
 
-    static [System.Data.DataTable] CreateSitesStatesDT() {
+    static [System.Data.DataTable] Create_sitesStatesDT() {
         $dt = New-Object System.Data.DataTable
         $dt.Columns.Add("Column1", [string])
         return $dt
     }
 
-    static [System.Data.DataTable] CreatePricesDT() {
+    static [System.Data.DataTable] Create_sitesStatesFinal() {
+        $dt = New-Object System.Data.DataTable
+        $dt.Columns.Add("Column1", [string])
+        return $dt
+    }
+
+    static [System.Data.DataTable] Create_dtPrices() {
         $dt = New-Object System.Data.DataTable
         $dt.Columns.Add("Qty", [decimal])
         $dt.Columns.Add("List Price", [decimal])
@@ -52,6 +69,26 @@ class DataTableManager {
         $dt.Columns.Add("MRC", [decimal])
         return $dt
     }
+
+    static [System.Data.DataTable] Create_dtPrices2() {
+        $dt = New-Object System.Data.DataTable
+        $dt.Columns.Add("MRC Unit Price", [string])
+        $dt.Columns.Add("Units", [double])
+        $dt.Columns.Add("MRC Total", [string])
+        return $dt
+    }
+
+    static [System.Data.DataTable] Create_dtJoined3() {
+        $dt = New-Object System.Data.DataTable
+        $dt.Columns.Add("Description", [string])
+        $dt.Columns.Add("Site Number", [string])
+        $dt.Columns.Add("Monthly recurring charges (MRC) Per Unit", [string])
+        $dt.Columns.Add("Units", [string])
+        $dt.Columns.Add("Extended MRC", [string])
+        return $dt
+    }
+
+
 
     # Add more methods for other DataTables as needed
 }
@@ -75,6 +112,59 @@ class DataTableOperations {
 
     # Add more methods for other operations as needed
 }
+
+
+
+class DataTableOperations_1 {
+    static [void] AddRowToDataTable([System.Data.DataTable] $dt, [string] $data) {
+        $dt.Rows.Add($data)
+    }
+
+    static [System.Data.DataTable] FilterDataTable([System.Data.DataTable] $dt, [string] $filterCriteria) {
+        $filteredDT = $dt.Clone()
+        foreach ($row in $dt.Rows) {
+            if ($row["Column1"] -like $filterCriteria) {
+                $filteredDT.ImportRow($row)
+            }
+        }
+        return $filteredDT
+    }
+
+    static [System.Data.DataTable] Build_customerInfoDT () { #before, this had input arguments of $data/$customerInfo and the $dt
+        # Building the DataTable from the input data array
+
+        $dt = [DataTableManager]::CreateCustomerInfoDT()
+
+        $regex0 = [RegexOperations]::ExtractQuotation($pdfText)
+
+        $data = [regex]::Matches($regex0, "^.*", [System.Text.RegularExpressions.RegexOptions]::IgnoreCase -bor [System.Text.RegularExpressions.RegexOptions]::Multiline).Value
+
+
+
+        $rowCount = $data.Count #this will be $customerInfo
+        $counter = 0
+
+        while ($counter -lt $rowCount) {
+            $line = $data[$counter]
+            if (-not [string]::IsNullOrWhiteSpace($line) -and $line -notmatch "Quotation" -and $line -notmatch "Billing") {
+                $dt.Rows.Add($line)
+            }
+            $counter++
+        }
+
+        # Cleaning the rows in the DataTable
+        $pattern = "(Quote\s+No.*|Quote\s+Date.*|Valid\s+Until.*|Payment\s+Term.*)|Quoted|SpecificName|SpecificStreet|SpecificCity|SpecificStateZip|SpecificPhone|SpecificEmail|SpecificName"
+        foreach ($row in $dt.Rows) {
+            $currentText = $row["Column1"]
+            $updatedText = $currentText -replace $pattern, ""
+            $row["Column1"] = $updatedText.Trim()
+        }
+
+        return $dt
+    }
+}
+
+
 
 
 
@@ -154,7 +244,7 @@ foreach ($row in $customerInfoDT.Rows) {
 
 
 
-#building sitesStatesDT
+# BUILDING  sitesStates DATATABLE
 
 #TODO - Use simliar approach you used for customerInfoDT so we don't have to an extra step of datatable filtering
 $rowCount = $sitesStatesRegex2.Count

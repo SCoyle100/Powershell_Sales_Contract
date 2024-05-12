@@ -5,6 +5,7 @@ Add-Type -AssemblyName Microsoft.Office.Interop.Outlook
 
 # This constructs the path based on the directory of the currently running script
 . "$PSScriptRoot\forms.ps1"
+. "$PSScriptRoot\regex_operations.ps1"
 
 
 
@@ -22,9 +23,9 @@ function Test-PdfProcessor {
 
         #$quotation = [RegexOperations]::ExtractQuotation($pdfText)
 
-        $quotation2 = [RegexOperations]::ExtractItemDescription($pdfText)
+        $quotation2 = [RegexOperations1]::ExtractItemDescription($pdfText)
 
-        $quotation3 = [RegexOperations]::RemovePricingDetails($pdfText)
+        $quotation3 = [RegexOperations1]::RemovePricingDetails($pdfText)
 
 
         #Write-Host "REGEX CLASS WORKS!: $quotation"
@@ -46,11 +47,11 @@ function Test-RegexOperations {
 
     param([string] $pdfText) #this passes the variable pdfText into this function, otherwise, it would be bound to the local scope in the function where it was declared
     
-    $quotation = [RegexOperations]::ExtractQuotation($pdfText)
-    $itemDescription = [RegexOperations]::ExtractItemDescription($pdfText)
-    $cleanedText = [RegexOperations]::RemovePricingDetails($itemDescription)
-    $paymentTenure = [RegexOperations]::ExtractPaymentTenure($pdfText)
-    $shippingCost = [RegexOperations]::ExtractShippingCost($pdfText)
+    $quotation = [RegexOperations1]::ExtractQuotation($pdfText)
+    $itemDescription = [RegexOperations1]::ExtractItemDescription($pdfText)
+    $cleanedText = [RegexOperations1]::RemovePricingDetails($itemDescription)
+    $paymentTenure = [RegexOperations1]::ExtractPaymentTenure($pdfText)
+    $shippingCost = [RegexOperations1]::ExtractShippingCost($pdfText)
 
     Write-Host "Quotation: $quotation"
     Write-Host "Item Description: $itemDescription"
@@ -110,7 +111,7 @@ $pdfText = Test-PdfProcessor
 
 
 
-Test-RegexOperations $pdfText
+#Test-RegexOperations $pdfText
 
 #Test-RegexOperations_2 $pdfText
 

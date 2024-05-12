@@ -65,13 +65,17 @@ class PdfProcessor {
 
 
 
-#may need to replace $pdfText with $textContent
 
+#I think we need a separate script just for regex operations
 class RegexOperations {
+
     static [string] ExtractQuotation([string] $pdfText) {
+
+        #I believe this is to build the $customerInfoDT table
+
         Write-Host "Debug: Extracting Quotation from text"  # Debug output
 
-        if ($pdfText -match "Quotation[\s\S]+?BUSINESS") {
+        if ($pdfText -match "Quotation[\s\S]+?Quoted") {
             return $matches[0]
         } else {
             Write-Host "Debug: Pattern not found in text"  # Debug output
@@ -324,14 +328,15 @@ class OutlookGALUserDetails {
     }
 
     [string] Convert-NameFormat([string] $name) {
-    if ($name -like '*,*') {
-        $parts = $name -split ','
-        $formattedName = $($parts[1].Trim()) + " " + $($parts[0].Trim())
-    } else {
-        $formattedName = $name
+        if ($name -like '*,*') {
+            $parts = $name -split ','
+            $formattedName = $($parts[1].Trim()) + " " + $($parts[0].Trim())
+            return $formattedName
+        } else {
+            return $name
+        }
     }
-        return $formattedName
-    }
+
 
 
     [void] ProcessSalesDetails([PSObject] $UserDetails) {
