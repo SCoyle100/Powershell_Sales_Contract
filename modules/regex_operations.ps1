@@ -1,9 +1,9 @@
 
-#. "$PSScriptRoot\forms.ps1"
+. "$PSScriptRoot\forms.ps1"
 
 
 
-class RegexOperations1 {
+class RegexOperations{
 
     static [string] ExtractQuotation([string] $pdfText) {
 

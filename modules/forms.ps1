@@ -29,6 +29,7 @@ class PdfFileSelectionForm {
 
 class PdfProcessor {
     [string] $PdfToTextPath
+    #static [string] $PdfText
 
     PdfProcessor() {
         $this.PdfToTextPath = "C:\Program Files\xpdf-tools-win-4.04\xpdf-tools-win-4.04\bin64\pdftotext.exe"
@@ -43,8 +44,10 @@ class PdfProcessor {
         $outputTxtPath = [System.IO.Path]::ChangeExtension($pdfFilePath, '.txt')
         & $this.PdfToTextPath -table $pdfFilePath $outputTxtPath
         if (Test-Path $outputTxtPath) {
+            
             $pdfText = Get-Content $outputTxtPath -Raw
             Write-Host "Debug: Extracted text length is $($pdfText.Length)"
+            
             return $pdfText
         } else {
             Write-Host "Failed to convert PDF to text."
@@ -53,15 +56,17 @@ class PdfProcessor {
     }
 
     static [string] ExtractQuotation([string] $pdfText) {
-        Write-Host "Debug: Extracting Quotation from text"  # Debug output
+        Write-Host "Debug: Extracting Quotation from text"
         if ($pdfText -match "Quotation[\s\S]+?BUSINESS") {
             return $matches[0]
         } else {
-            Write-Host "Debug: Pattern not found in text"  # Debug output
+            Write-Host "Debug: Pattern not found in text"
             return "Pattern not found"
         }
     }
+
 }
+
 
 
 
