@@ -12,10 +12,8 @@ This script leverages Windows Forms to provide user-friendly pop-up dialog boxes
 - **Excel Creation** Information extracted from the pdf quote is also written to 2 different Excel files
   
 
-## To Do:
-- There is currently a word document selection that selects a table, creates a datatable from it for later use, as well as copying the table to be pasted, but that will be removed for this project, as the requirements have changed.
-- Adding regular expressions to parse an HTML page that the user will select which contains key data (The format doesn't change, and I am aiming to reduce the usage of additional libraries such as HtmlAgilityPack)
-- Reducing technical debt (There are a lot of testing portions that print out various datatables that won't be used in the final product)
-- Modularizing the script into different sections for easier maintenance  
+## **Latest Updates - 5/13/2024**
+
+I am in the process of refactoring this into an object oriented, facade pattern.  
 
 
