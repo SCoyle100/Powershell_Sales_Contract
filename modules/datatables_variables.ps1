@@ -73,30 +73,30 @@ class DataTableManager {
     }
 
     static [System.Data.DataTable] Create_dtPrices() {
-        $dt = New-Object System.Data.DataTable
-        $dt.Columns.Add("Qty", [decimal])
-        $dt.Columns.Add("List Price", [decimal])
-        $dt.Columns.Add("Total Price", [decimal])
-        $dt.Columns.Add("MRC", [decimal])
-        return $dt
+        $dtPrices = New-Object System.Data.DataTable
+        $dtPrices.Columns.Add("Qty", [decimal])
+        $dtPrices.Columns.Add("List Price", [decimal])
+        $dtPrices.Columns.Add("Total Price", [decimal])
+        $dtPrices.Columns.Add("MRC", [decimal])
+        return $dtPrices
     }
 
     static [System.Data.DataTable] Create_dtPrices2() {
-        $dt = New-Object System.Data.DataTable
-        $dt.Columns.Add("MRC Unit Price", [string])
-        $dt.Columns.Add("Units", [double])
-        $dt.Columns.Add("MRC Total", [string])
-        return $dt
+        $dtPrices2 = New-Object System.Data.DataTable
+        $dtPrices2.Columns.Add("MRC Unit Price", [string])
+        $dtPrices2.Columns.Add("Units", [double])
+        $dtPrices2.Columns.Add("MRC Total", [string])
+        return $dtPrices2
     }
 
     static [System.Data.DataTable] Create_dtJoined3() {
-        $dt = New-Object System.Data.DataTable
-        $dt.Columns.Add("Description", [string])
-        $dt.Columns.Add("Site Number", [string])
-        $dt.Columns.Add("Monthly recurring charges (MRC) Per Unit", [string])
-        $dt.Columns.Add("Units", [string])
-        $dt.Columns.Add("Extended MRC", [string])
-        return $dt
+        $dtJoined3 = New-Object System.Data.DataTable
+        $dtJoined3.Columns.Add("Description", [string])
+        $dtJoined3.Columns.Add("Site Number", [string])
+        $dtJoined3.Columns.Add("Monthly recurring charges (MRC) Per Unit", [string])
+        $dtJoined3.Columns.Add("Units", [string])
+        $dtJoined3.Columns.Add("Extended MRC", [string])
+        return $dtJoined3
     }
 
 
@@ -147,13 +147,9 @@ class DataTableOperations1 {
     static [System.Data.DataTable] Build_customerInfoDT_DT ([string] $regex0) { #before, this had input arguments of $data/$customerInfo and the $dt
         # Building the DataTable from the input data array
 
-        #$pdfProcessor = [PdfProcessor]::new()
-        #$pdfProcessor.ConvertToText($pdfFilePath)
-        #$pdfText = [PdfProcessor]::GetPdfText()
+      
 
         $dt = [DataTableManager]::CreateCustomerInfoDT()
-
-        #$regex0 = [RegexOperations]::ExtractQuotation($pdfText)
 
         $data = [regex]::Matches($regex0, "^.*", [System.Text.RegularExpressions.RegexOptions]::IgnoreCase -bor [System.Text.RegularExpressions.RegexOptions]::Multiline).Value
 
@@ -183,14 +179,7 @@ class DataTableOperations1 {
 
     static [System.Data.Datatable] Build_SitesStatesFiltered_DT ([string] $regex2) {
 
-        #$sitesStatesFiltered = New-Object System.Data.DataTable
-        #$sitesStatesFinal = New-Object System.Data.Datatable
-    
-    
-        #$pdfText = [PdfProcessor]::GetPdfText()
-
-        #$regex1 = [RegexOperations]::ExtractItemDescription($pdfText)
-        #$regex2 = [RegexOperations]::RemovePricingDetails($regex1)
+      
         $sitesStatesRegex2 = [regex]::Matches($regex2, "^.*", [System.Text.RegularExpressions.RegexOptions]::IgnoreCase -bor [System.Text.RegularExpressions.RegexOptions]::Multiline).Value
 
 
@@ -271,7 +260,125 @@ class DataTableOperations1 {
                 $indexArray += $i
             }
         }
-        return $indexArray
+        return $indexArray #you should pass $sitesStatesFiltered as the datatable, and Bundle as the $triggerstring
+    }
+
+    static [System.Data.DataTable] Build_dtJoined3_DT([string] $regex1, [System.Data.DataTable] $sitesStatesFinal, [double] $marginSelection, [double] $price) {
+        $regexPricesPattern = "\d+\s*\d{1,3}(,\d{3})*\.\d{2}\s+\d{1,3}(,\d{3})*\.\d{2}\s+\d{1,3}(,\d{3})*\.\d{2}"
+        $regexPrices = [System.Text.RegularExpressions.Regex]::new($regexPricesPattern)
+        $matchesPrice = $regexPrices.Matches($regex1) | ForEach-Object { $_ }
+
+        $dtPrices = [DataTableManager]::Create_dtPrices()
+
+        foreach ($currentMatch in $matchesPrice) {
+            $currentMatchResults = $currentMatch.Value -replace "\s+", " "
+            $dtPrices.Rows.Add($currentMatchResults.Split(' '))
+        }
+
+        for ($i = $dtPrices.Rows.Count - 1; $i -ge 0; $i--) {
+            $row = $dtPrices.Rows[$i]
+            if ([string]::IsNullOrEmpty($row[0].ToString())) {
+                $dtPrices.Rows.RemoveAt($i)
+            }
+        }
+
+        $dtPrices1 = $dtPrices.Copy()
+
+        $dtPrices2 = [DataTableManager]::Create_dtPrices2()
+
+
+        foreach ($currentRow in $dtPrices1.Rows) {
+            $value = [double]$currentRow[2] / $marginSelection 
+            $quantity = [int]$currentRow[0]
+            $result = [Math]::Round($value / $quantity, 2)
+            $newRowData = @(
+                $result.ToString(),
+                $currentRow[0].ToString(),
+                [Math]::Round($value, 2).ToString()
+            )
+            $newRow = $dtPrices2.NewRow()
+            $newRow.ItemArray = $newRowData
+            $dtPrices2.Rows.Add($newRow)
+        }
+
+        $siteNumberColumn = New-Object System.Data.DataColumn "Site Number", ([string])
+        $dtPrices2.Columns.Add($siteNumberColumn)
+        $siteNumberColumn.SetOrdinal(0)
+        foreach ($row in $dtPrices2.Rows) {
+            $row["Site Number"] = "1"
+        }
+
+        $initialRow = $dtPrices2.NewRow()
+        $dtPrices2.Rows.InsertAt($initialRow, 0)
+
+        $indexArray1 = [DataTableOperations1]::FindIndexesOfTrigger($dtPrices2, "Bundle Subtotal $")
+        foreach ($currentItem in $indexArray1) {
+            $newRow = $dtPrices2.NewRow()
+            $dtPrices2.Rows.InsertAt($newRow, $currentItem)
+            $dtPrices2.Rows.InsertAt($dtPrices2.NewRow(), $currentItem + 1)
+        }
+
+        $dtJoined3 = [DataTableManager]::Create_dtJoined3()
+
+        foreach ($currentRow1 in $sitesStatesFinal.Rows) {
+            foreach ($currentRow2 in $dtPrices2.Rows) {
+                if ($sitesStatesFinal.Rows.IndexOf($currentRow1) -eq $dtPrices2.Rows.IndexOf($currentRow2)) {
+                    $joinedRow = $dtJoined3.NewRow()
+                    $joinedRow.ItemArray = $currentRow1.ItemArray + $currentRow2.ItemArray
+                    $dtJoined3.Rows.Add($joinedRow)
+                }
+            }
+        }
+
+        $mrcSUM = 0
+        foreach ($row in $dtJoined3.Rows) {
+            $mrcValue = $row["Extended MRC"]
+            if ($null -ne $mrcValue -and $mrcValue -ne "") {
+                try {
+                    $mrcSUM += [double]::Parse($mrcValue)
+                } catch {
+                    Write-Host "Invalid MRC value: $mrcValue"
+                }
+            }
+        }
+        $mrcSUM = [Math]::Round($mrcSUM, 2).ToString()
+
+        $newRowForTotal = $dtJoined3.NewRow()
+        $newRowForTotal[3] = "Total MRC:"
+        $newRowForTotal[4] = '$' + $mrcSUM
+        $dtJoined3.Rows.Add($newRowForTotal)
+
+        $newRow = $dtJoined3.NewRow()
+        $newRow[3] = "Total MRC for MPP:"
+        $newRow[4] = "N/A"
+        $dtJoined3.Rows.Add($newRow)
+
+        for ($i = 0; $i -lt 2; $i++) {
+            $blankRow = $dtJoined3.NewRow()
+            $dtJoined3.Rows.Add($blankRow)
+        }
+
+        $shippingRow = $dtJoined3.NewRow()
+        $shippingRow[3] = "Shipping Costs of AT&T Equipment, One Time Charge - (OTC)"
+        $shippingRow[4] = '$' + $price #variable for getting shipping cost
+        $dtJoined3.Rows.Add($shippingRow)
+
+        $initialRowData_final = @(" ", " ", " ", " ")
+        $initialRow_final = $dtJoined3.NewRow()
+        $initialRow_final.ItemArray = $initialRowData_final
+        $dtJoined3.Rows.InsertAt($initialRow_final, 0)
+
+        foreach ($row in $dtJoined3.Rows) {
+            if ($row[0] -like "*Total*") {
+                $dtJoined3.Rows.Remove($row)
+                break
+            }
+        }
+
+        $dtJoined3.AcceptChanges()
+
+        return $dtJoined3
+
     }
 
 }

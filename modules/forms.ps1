@@ -1,4 +1,5 @@
 Add-Type -AssemblyName System.Windows.Forms
+Add-Type -AssemblyName System.Drawing
 
 
 class PdfFileSelectionForm {
@@ -92,33 +93,45 @@ class MarginSelectionForm {
         $button26.Text = "26%"
         $button26.Location = New-Object System.Drawing.Point(30, 50)  # Set position
         $button26.Size = New-Object System.Drawing.Size(100, 23)
-        $button26.Add_Click({
-            $this.MarginSelection = 0.74
-            $this.MarginSelectionShow = 0.26
-            $form.Close()
-        })
-
-        $form.Controls.Add($button26)
         
-
         $button35 = New-Object System.Windows.Forms.Button
         $button35.Location = New-Object System.Drawing.Point(150, 50)  # Set position
         $button35.Size = New-Object System.Drawing.Size(100, 23)
         $button35.Text = "35%"
-        $button35.Add_Click({
-            $this.MarginSelection = 0.65
-            $this.MarginSelectionShow = 0.35
+
+        # Use the current instance for event handlers
+        $currentInstance = $this
+
+        $button26.Add_Click([System.EventHandler]{
+            $currentInstance.OnButton26Click()
+            $form.Close()
+        })
+        
+        $button35.Add_Click([System.EventHandler]{
+            $currentInstance.OnButton35Click()
             $form.Close()
         })
 
-        
+        $form.Controls.Add($button26)
         $form.Controls.Add($button35)
 
-        $form.Add_Shown{{$form.Activate()}}
+        $form.Add_Shown({$form.Activate()})
         
         $form.ShowDialog() | Out-Null
     }
+
+    [void] OnButton26Click() {
+        $this.MarginSelection = 0.74
+        $this.MarginSelectionShow = 0.26
+    }
+
+    [void] OnButton35Click() {
+        $this.MarginSelection = 0.65
+        $this.MarginSelectionShow = 0.35
+    }
 }
+
+
 
 
 class InputDialogWithSkip {

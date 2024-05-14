@@ -75,7 +75,8 @@ function Test-RegexOperations {
 function Test-MarginSelectionForm {
     $marginForm = [MarginSelectionForm]::new()
     $marginForm.ShowDialog()
-    Write-Host "Selected Margin: $($marginForm.MarginSelectionShow)"
+    Write-Host "Selected Margin: $($marginForm.MarginSelection)"
+    return $marginForm.MarginSelectionShow
 }
 
 # Function to test InputDialogWithSkip
@@ -120,7 +121,35 @@ function Test-DataTableOperations{
     Write-Host $sitesStatesFiltered.Rows.Count
     Write-Host $sitesStatesFinal.Rows.Count
 
+    $trigger = "Bundle Subtotal $"
+
+    $index = [DataTableOperations1]::FindIndexesOfTrigger($sitesStatesFiltered, $trigger)
+
+
+    Write-host "The array of indices is:" $index
+
+
 }
+
+
+function Test-finalDataTable {
+    
+
+    $regex1 = [RegexOperations]::ExtractItemDescription($pdfText)
+    $regex2 = [RegexOperations]::RemovePricingDetails($regex1)
+
+    $sitesStatesFiltered = [DataTableOperations1]::Build_SitesStatesFiltered_DT($regex2)
+    $sitesStatesFinal = [DataTableOperations1]::Build_SitesStatesFinal_DT($sitesStatesFiltered)
+
+    $marginSelection = Test-MarginSelectionForm
+    $price = 350.50
+
+    $finalDataTable = [DataTableOperations1]::Build_dtJoined3_DT($regex1, $sitesStatesFinal, $marginSelection, $price)
+
+    Write-Host "dtJoined 3:" $finalDatatable.Rows.Count
+
+
+} 
 
 
 
@@ -129,14 +158,9 @@ function Test-DataTableOperations{
 
 $pdfText = Test-PdfProcessor
 
+Test-finalDataTable
 
-
-
-
-
-Test-RegexOperations $pdfText
-
-Test-DataTableOperations 
+ 
 
 
 
