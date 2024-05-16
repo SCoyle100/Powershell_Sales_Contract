@@ -106,23 +106,7 @@ class DataTableManager {
 
 
 
-class DataTableOperations {
-    static [void] AddRowToDataTable([System.Data.DataTable] $dt, [string] $data) {
-        $dt.Rows.Add($data)
-    }
 
-    static [System.Data.DataTable] FilterDataTable([System.Data.DataTable] $dt, [string] $filterCriteria) {
-        $filteredDT = $dt.Clone()
-        foreach ($row in $dt.Rows) {
-            if ($row["Column1"] -like $filterCriteria) {
-                $filteredDT.ImportRow($row)
-            }
-        }
-        return $filteredDT
-    }
-
-    # Add more methods for other operations as needed
-}
 
 
 
@@ -254,6 +238,8 @@ class DataTableOperations1 {
     }
     
     static [int[]] FindIndexesOfTrigger([System.Data.DataTable] $dt, [string] $triggerString) {
+
+
         $indexArray = @()
         for ($i = 0; $i -lt $dt.Rows.Count; $i++) {
             if ($dt.Rows[$i][0].ToString().Contains($triggerString)) {
@@ -262,6 +248,99 @@ class DataTableOperations1 {
         }
         return $indexArray #you should pass $sitesStatesFiltered as the datatable, and Bundle as the $triggerstring
     }
+
+
+    static [System.Data.DataTable] Build_dtPrices1_DT([string] $regex1) {
+        $regexPricesPattern = "\d+\s*\d{1,3}(,\d{3})*\.\d{2}\s+\d{1,3}(,\d{3})*\.\d{2}\s+\d{1,3}(,\d{3})*\.\d{2}"
+        $regexPrices = [System.Text.RegularExpressions.Regex]::new($regexPricesPattern)
+        $matchesPrice = $regexPrices.Matches($regex1) | ForEach-Object { $_ }
+
+        $dtPrices = [DataTableManager]::Create_dtPrices()
+
+        foreach ($currentMatch in $matchesPrice) {
+            $currentMatchResults = $currentMatch.Value -replace "\s+", " "
+            $dtPrices.Rows.Add($currentMatchResults.Split(' '))
+        }
+
+        for ($i = $dtPrices.Rows.Count - 1; $i -ge 0; $i--) {
+            $row = $dtPrices.Rows[$i]
+            if ([string]::IsNullOrEmpty($row[0].ToString())) {
+                $dtPrices.Rows.RemoveAt($i)
+            }
+        }
+
+        $dtPrices1 = $dtPrices.Copy()
+
+        return $dtPrices1
+
+    }
+
+    
+
+        
+
+        
+
+
+    static [System.Data.DataTable] Build_dtPrices2_DT([string] $regex1, [System.Data.DataTable] $sitesStatesFinal, [System.Data.DataTable] $sitesStatesFiltered, [double] $marginSelection, [double] $price) {
+        $regexPricesPattern = "\d+\s*\d{1,3}(,\d{3})*\.\d{2}\s+\d{1,3}(,\d{3})*\.\d{2}\s+\d{1,3}(,\d{3})*\.\d{2}"
+        $regexPrices = [System.Text.RegularExpressions.Regex]::new($regexPricesPattern)
+        $matchesPrice = $regexPrices.Matches($regex1) | ForEach-Object { $_ }
+
+        $dtPrices = [DataTableManager]::Create_dtPrices()
+
+        foreach ($currentMatch in $matchesPrice) {
+            $currentMatchResults = $currentMatch.Value -replace "\s+", " "
+            $dtPrices.Rows.Add($currentMatchResults.Split(' '))
+        }
+
+        for ($i = $dtPrices.Rows.Count - 1; $i -ge 0; $i--) {
+            $row = $dtPrices.Rows[$i]
+            if ([string]::IsNullOrEmpty($row[0].ToString())) {
+                $dtPrices.Rows.RemoveAt($i)
+            }
+        }
+
+        $dtPrices1 = $dtPrices.Copy()
+
+        $dtPrices2 = [DataTableManager]::Create_dtPrices2()
+
+
+        foreach ($currentRow in $dtPrices1.Rows) {
+            $value = [double]$currentRow[2] / $marginSelection 
+            $quantity = [int]$currentRow[0]
+            $result = [Math]::Round($value / $quantity, 2)
+            $newRowData = @(
+                $result.ToString(),
+                $currentRow[0].ToString(),
+                [Math]::Round($value, 2).ToString()
+            )
+            $newRow = $dtPrices2.NewRow()
+            $newRow.ItemArray = $newRowData
+            $dtPrices2.Rows.Add($newRow)
+        }
+
+        $siteNumberColumn = New-Object System.Data.DataColumn "Site Number", ([string])
+        $dtPrices2.Columns.Add($siteNumberColumn)
+        $siteNumberColumn.SetOrdinal(0)
+        foreach ($row in $dtPrices2.Rows) {
+            $row["Site Number"] = "1"
+        }
+
+        $initialRow = $dtPrices2.NewRow()
+        $dtPrices2.Rows.InsertAt($initialRow, 0)
+
+        $indexArray1 = [DataTableOperations1]::FindIndexesOfTrigger($sitesStatesFiltered, "Bundle Subtotal $")
+        foreach ($currentItem in $indexArray1) {
+            $newRow = $dtPrices2.NewRow()
+            $dtPrices2.Rows.InsertAt($newRow, $currentItem)
+            $dtPrices2.Rows.InsertAt($dtPrices2.NewRow(), $currentItem + 1)
+        }
+
+        return $dtPrices2
+
+    }
+
 
     static [System.Data.DataTable] Build_dtJoined3_DT([string] $regex1, [System.Data.DataTable] $sitesStatesFinal, [double] $marginSelection, [double] $price) {
         $regexPricesPattern = "\d+\s*\d{1,3}(,\d{3})*\.\d{2}\s+\d{1,3}(,\d{3})*\.\d{2}\s+\d{1,3}(,\d{3})*\.\d{2}"

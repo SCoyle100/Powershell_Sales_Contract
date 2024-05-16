@@ -1,7 +1,258 @@
 # Load Word COM object
-$word = New-Object -ComObject Word.Application
-$templateDoc = $word.Documents.Open($contractTemplate) # Update the path
-$word.Visible = $true
+Add-Type -AssemblyName Microsoft.Office.Interop.Word
+
+
+
+
+class WordAutomation {
+
+
+
+
+    [object]$Word
+    [object]$TemplateDoc
+
+    WordAutomation([string]$contractTemplate) {
+        $this.Word = New-Object -ComObject Word.Application
+        $this.TemplateDoc = $this.Word.Documents.Open($contractTemplate)
+        $this.Word.Visible = $true
+    }
+
+    [void] FindPlaceholderText([string]$FindText, [string]$ReplaceText) {
+        $find = $this.TemplateDoc.Content.Find
+        $find.ClearFormatting()
+        while ($find.Execute($FindText)) {
+            $textRange = $find.Parent
+            $textRange.Text = $ReplaceText
+            $find.Wrap = 1 # wdFindContinue
+        }
+    }
+
+    [void] AddTable([System.Data.DataTable]$dtJoined3, [array]$currencyColumnIndices) {
+        $findText = "<<pricingTable>>"
+        $find = $this.TemplateDoc.Content.Find
+        $find.ClearFormatting()
+
+        if ($find.Execute($findText)) {
+            $dataTableRange = $find.Parent
+            $dataTableRange.Select()
+
+            $rowCount = $dtJoined3.Rows.Count
+            $columnCount = $dtJoined3.Columns.Count
+            $wordTable1 = $this.TemplateDoc.Tables.Add($dataTableRange, $rowCount + 1, $columnCount)
+
+            $wordTable1.Rows.Alignment = [Microsoft.Office.Interop.Word.WdRowAlignment]::wdAlignRowCenter
+
+            foreach ($cell in $wordTable1.Range.Cells) {
+                $cell.Range.ParagraphFormat.Alignment = [Microsoft.Office.Interop.Word.WdParagraphAlignment]::wdAlignParagraphCenter
+                $cell.VerticalAlignment = [Microsoft.Office.Interop.Word.WdCellVerticalAlignment]::wdCellAlignVerticalCenter
+                $cell.Range.Font.Name = "Arial"
+                $cell.Range.Font.Size = 8
+                $cell.Range.ParagraphFormat.SpaceBefore = 0
+                $cell.Range.ParagraphFormat.SpaceAfter = 0
+                $cell.Range.ParagraphFormat.LineSpacingRule = [Microsoft.Office.Interop.Word.WdLineSpacing]::wdLineSpaceSingle
+            }
+
+            for ($columnIndex = 0; $columnIndex -lt $columnCount; $columnIndex++) {
+                $headerText = [System.Convert]::ToString($dtJoined3.Columns[$columnIndex].ColumnName)
+                $wordTable1.Cell(1, $columnIndex + 1).Range.Text = $headerText
+            }
+
+            for ($rowIndex = 0; $rowIndex -lt $rowCount; $rowIndex++) {
+                for ($columnIndex = 0; $columnIndex -lt $columnCount; $columnIndex++) {
+                    if ($wordTable1.Cell($rowIndex + 2, $columnIndex + 1)) {
+                        $cellData = $dtJoined3.Rows[$rowIndex][$columnIndex] -as [String]
+                        if ($currencyColumnIndices -contains $columnIndex -and $cellData -match '^\d+(\.\d+)?$') {
+                            $cellData = ('${0:N2}' -f [double]$cellData)
+                        }
+                        $wordTable1.Cell($rowIndex + 2, $columnIndex + 1).Range.Text = $cellData
+                    }
+                }
+            }
+
+            $borders = @(
+                $wordTable1.Borders.Item([Microsoft.Office.Interop.Word.WdBorderType]::wdBorderLeft),
+                $wordTable1.Borders.Item([Microsoft.Office.Interop.Word.WdBorderType]::wdBorderRight),
+                $wordTable1.Borders.Item([Microsoft.Office.Interop.Word.WdBorderType]::wdBorderTop),
+                $wordTable1.Borders.Item([Microsoft.Office.Interop.Word.WdBorderType]::wdBorderBottom),
+                $wordTable1.Borders.Item([Microsoft.Office.Interop.Word.WdBorderType]::wdBorderHorizontal),
+                $wordTable1.Borders.Item([Microsoft.Office.Interop.Word.WdBorderType]::wdBorderVertical)
+            )
+
+            foreach ($border in $borders) {
+                $border.LineStyle = [Microsoft.Office.Interop.Word.WdLineStyle]::wdLineStyleSingle
+                $border.Color = [Microsoft.Office.Interop.Word.WdColor]::wdColorBlack
+            }
+
+            $this.RemoveBordersForSpecialRows($wordTable1)
+            $this.MakeSpecificCellsBold($wordTable1, $indexArray1)
+        }
+    }
+
+    [void] AddSKUTable([System.Data.DataTable] $dtSKU2) {
+        $findTextSKU = "<<skuTable>>"
+        $findSKU = $this.TemplateDoc.Content.Find
+        $findSKU.ClearFormatting()
+
+        if ($findSKU.Execute($findTextSKU)) {
+            $dataTableRangeSKU = $findSKU.Parent
+            $dataTableRangeSKU.Select()
+
+            $rowCountSKU = $dtSKU2.Rows.Count
+            $columnCountSKU = $dtSKU2.Columns.Count
+            $wordTableSKU = $this.TemplateDoc.Tables.Add($dataTableRangeSKU, $rowCountSKU + 1, $columnCountSKU)
+
+            $wordTableSKU.Rows.Alignment = [Microsoft.Office.Interop.Word.WdRowAlignment]::wdAlignRowCenter
+
+            foreach ($cellSKU in $wordTableSKU.Range.Cells) {
+                $cellSKU.Range.ParagraphFormat.Alignment = [Microsoft.Office.Interop.Word.WdParagraphAlignment]::wdAlignParagraphCenter
+                $cellSKU.VerticalAlignment = [Microsoft.Office.Interop.Word.WdCellVerticalAlignment]::wdCellAlignVerticalCenter
+                $cellSKU.Range.Font.Name = "Arial"
+                $cellSKU.Range.Font.Size = 8
+            }
+
+            for ($columnIndexSKU = 0; $columnIndexSKU -lt $columnCountSKU; $columnIndexSKU++) {
+                $headerTextSKU = [System.Convert]::ToString($dtSKU2.Columns[$columnIndexSKU].ColumnName)
+                $wordTableSKU.Cell(1, $columnIndexSKU + 1).Range.Text = $headerTextSKU
+            }
+
+            for ($rowIndexSKU = 0; $rowIndexSKU -lt $rowCountSKU; $rowIndexSKU++) {
+                for ($columnIndexSKU = 0; $columnIndexSKU -lt $columnCountSKU; $columnIndexSKU++) {
+                    if ($wordTableSKU.Cell($rowIndexSKU + 2, $columnIndexSKU + 1)) {
+                        $cellDataSKU = $dtSKU2.Rows[$rowIndexSKU][$columnIndexSKU] -as [String]
+                        $wordTableSKU.Cell($rowIndexSKU + 2, $columnIndexSKU + 1).Range.Text = $cellDataSKU
+                    }
+                }
+            }
+
+            $borders = @(
+                $wordTableSKU.Borders.Item([Microsoft.Office.Interop.Word.WdBorderType]::wdBorderLeft),
+                $wordTableSKU.Borders.Item([Microsoft.Office.Interop.Word.WdBorderType]::wdBorderRight),
+                $wordTableSKU.Borders.Item([Microsoft.Office.Interop.Word.WdBorderType]::wdBorderTop),
+                $wordTableSKU.Borders.Item([Microsoft.Office.Interop.Word.WdBorderType]::wdBorderBottom),
+                $wordTableSKU.Borders.Item([Microsoft.Office.Interop.Word.WdBorderType]::wdBorderHorizontal),
+                $wordTableSKU.Borders.Item([Microsoft.Office.Interop.Word.WdBorderType]::wdBorderVertical)
+            )
+
+            foreach ($border in $borders) {
+                $border.LineStyle = [Microsoft.Office.Interop.Word.WdLineStyle]::wdLineStyleSingle
+                $border.Color = [Microsoft.Office.Interop.Word.WdColor]::wdColorBlack
+            }
+        }
+    }
+
+    [void] RemoveBordersForSpecialRows([object]$wordTable1, [array] $indexArray1) {
+        $startRow = $wordTable1.Rows.Count - 5
+        for ($rowIndex = $startRow; $rowIndex -le $wordTable1.Rows.Count; $rowIndex++) {
+            for ($colIndex = 1; $colIndex -le 3; $colIndex++) {
+                $cell = $wordTable1.Cell($rowIndex, $colIndex)
+                $cell.Borders.Item([Microsoft.Office.Interop.Word.WdBorderType]::wdBorderBottom).LineStyle = [Microsoft.Office.Interop.Word.WdLineStyle]::wdLineStyleNone
+                $cell.Borders.Item([Microsoft.Office.Interop.Word.WdBorderType]::wdBorderVertical).LineStyle = [Microsoft.Office.Interop.Word.WdLineStyle]::wdLineStyleNone
+                $cell.Borders.Item([Microsoft.Office.Interop.Word.WdBorderType]::wdBorderLeft).LineStyle = [Microsoft.Office.Interop.Word.WdLineStyle]::wdLineStyleNone
+            }
+        }
+
+        foreach ($index in $indexArray1) {
+            $rowIndex = $index + 3
+            if ($rowIndex -le $wordTable1.Rows.Count) {
+                for ($i = 1; $i -lt $wordTable1.Columns.Count; $i++) {
+                    $wordTable1.Cell($rowIndex, $i).Borders.Item([Microsoft.Office.Interop.Word.WdBorderType]::wdBorderRight).LineStyle = [Microsoft.Office.Interop.Word.WdLineStyle]::wdLineStyleNone
+                }
+            }
+        }
+
+        for ($j = 0; $j -lt $indexArray1.Count - 1; $j++) {
+            $index = $indexArray1[$j]
+            $rowIndex = $index + 3
+            if ($rowIndex -le $wordTable1.Rows.Count) {
+                for ($i = 2; $i -le $wordTable1.Columns.Count; $i++) {
+                    $wordTable1.Cell($rowIndex, $i).Borders.Item([Microsoft.Office.Interop.Word.WdBorderType]::wdBorderBottom).LineStyle = [Microsoft.Office.Interop.Word.WdLineStyle]::wdLineStyleNone
+                }
+            }
+        }
+
+        $secondToLastRow = $wordTable1.Rows.Count - 1
+        $thirdToLastRow = $wordTable1.Rows.Count - 2
+        $columnsToModify = 4, 5
+        $rowsToModify = @($thirdToLastRow, $secondToLastRow)
+
+        foreach ($rowIndex in $rowsToModify) {
+            foreach ($colIndex in $columnsToModify) {
+                $cell = $wordTable1.Cell($rowIndex, $colIndex)
+                $cell.Borders.Item([Microsoft.Office.Interop.Word.WdBorderType]::wdBorderLeft).LineStyle = [Microsoft.Office.Interop.Word.WdLineStyle]::wdLineStyleNone
+                $cell.Borders.Item([Microsoft.Office.Interop.Word.WdBorderType]::wdBorderVertical).LineStyle = [Microsoft.Office.Interop.Word.WdLineStyle]::wdLineStyleNone
+            }
+        }
+
+        foreach ($colIndex in $columnsToRemoveBottomBorder) {
+            $cell = $wordTable1.Cell($thirdToLastRow, $colIndex)
+            $cell.Borders.Item([Microsoft.Office.Interop.Word.WdBorderType]::wdBorderBottom).LineStyle = [Microsoft.Office.Interop.Word.WdLineStyle]::wdLineStyleNone
+        }
+    }
+
+    [void] MakeSpecificCellsBold([object]$wordTable1, [array]$indexArray1) {
+        $cell = $wordTable1.Cell(3, 1)
+        $cell.Range.Font.Bold = $true
+        $cell.Range.Font.Size = 9
+
+        for ($j = 0; $j -lt $indexArray1.Count - 1; $j++) {
+            $index = $indexArray1[$j]
+            $rowIndex = $index + 4
+            if ($rowIndex -le $wordTable1.Rows.Count) {
+                $cell = $wordTable1.Cell($rowIndex, 1)
+                $cell.Range.Font.Bold = $true
+                $cell.Range.Font.Size = 9
+            }
+        }
+    }
+
+    [void] FormatCoverPage([array]$specificCells, [array]$stateAbbreviations) {
+        $wordTable = $this.TemplateDoc.Tables[1]
+        foreach ($row in $wordTable.Rows) {
+            foreach ($cell in $row.Cells) {
+                $cellTuple = [Tuple]::Create($row.Index, $cell.ColumnIndex)
+                if ($specificCells -contains $cellTuple) {
+                    $text = $cell.Range.Text.Trim()
+                    $text = $text -replace ": ", ":"
+                    $text = $text -replace ":", ": "
+
+                    $words = $text -split ' '
+                    for ($i = 0; $i -lt $words.Length; $i++) {
+                        $upperWord = $words[$i].ToUpper()
+                        if ($stateAbbreviations -contains $upperWord) {
+                            $words[$i] = $upperWord
+                        } elseif ($words[$i] -match "@") {
+                            $words[$i] = $words[$i].ToLower()
+                        } else {
+                            $words[$i] = [Globalization.CultureInfo]::CurrentCulture.TextInfo.ToTitleCase($words[$i].ToLower())
+                        }
+                    }
+
+                    $newText = $words -join " "
+                    foreach ($abbreviation in $stateAbbreviations) {
+                        $pattern = "\b$abbreviation\b"
+                        $newText = [Regex]::Replace($newText, $pattern, $abbreviation.ToUpper(), [Text.RegularExpressions.RegexOptions]::IgnoreCase)
+                    }
+
+                    $cell.Range.Text = $newText
+                    $cell.Range.Font.Name = "Arial"
+                    $cell.Range.Font.Size = 8
+                    $cell.Range.HighlightColorIndex = [Microsoft.Office.Interop.Word.WdColorIndex]::wdNoHighlight
+                }
+            }
+        }
+    }
+
+    [void] SaveAndClose([string]$newFilePath) {
+        $this.TemplateDoc.SaveAs([ref] $newFilePath)
+        $this.TemplateDoc.Close()
+        [System.Runtime.InteropServices.Marshal]::ReleaseComObject($this.TemplateDoc) | Out-Null
+        [System.Runtime.InteropServices.Marshal]::ReleaseComObject($this.Word) | Out-Null
+        [System.GC]::Collect()
+        [System.GC]::WaitForPendingFinalizers()
+    }
+}
+
 
 
 function Find-PlaceholderText {

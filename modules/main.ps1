@@ -134,23 +134,63 @@ function Test-DataTableOperations{
 
 function Test-finalDataTable {
     
+    
 
+    $regex0 = [RegexOperations]::ExtractQuotation($pdfText)    
     $regex1 = [RegexOperations]::ExtractItemDescription($pdfText)
     $regex2 = [RegexOperations]::RemovePricingDetails($regex1)
 
+    $customerInfoDT = [DataTableOperations1]::Build_customerInfoDT_DT($regex0)
     $sitesStatesFiltered = [DataTableOperations1]::Build_SitesStatesFiltered_DT($regex2)
     $sitesStatesFinal = [DataTableOperations1]::Build_SitesStatesFinal_DT($sitesStatesFiltered)
 
     $marginSelection = Test-MarginSelectionForm
     $price = 350.50
 
-    $finalDataTable = [DataTableOperations1]::Build_dtJoined3_DT($regex1, $sitesStatesFinal, $marginSelection, $price)
 
-    Write-Host "dtJoined 3:" $finalDatatable.Rows.Count
+
+    $dtPrices1 = [DataTableOperations1]::Build_dtPrices1_DT($regex1)
+
+    $dtPrices2 = [DataTableOperations1]::Build_dtPrices2_DT($regex1, $sitesStatesFinal, $sitesStatesFiltered, $marginSelection, $price)
+
+    $dtJoined3 = [DataTableOperations1]::Build_dtJoined3_DT($regex1, $sitesStatesFinal, $marginSelection, $price)
+
+
+    
+    PrintDataTable -dataTable $sitesStatesFinal
+    PrintDataTable -dataTable $customerInfoDT
+
+
+
+    #Write-Host "dtJoined 3:" $finalDatatable.Rows.Count
+
+    PrintDataTable -dataTable $dtPrices1
+    PrintDataTable -dataTable $dtPrices2
+    PrintDataTable -dataTable $dtJoined3
+    
+    $indexArray = [DataTableOperations1]::FindIndexesOfTrigger($sitesStatesFiltered, "SubTotal")
+
+    Write-Host "Index Array is: $indexArray"
 
 
 } 
 
+
+function PrintDataTable {
+    param (
+        [System.Data.DataTable] $dataTable
+    )
+
+    # Print column headers
+    $header = $dataTable.Columns | ForEach-Object { $_.ColumnName } -join "`t"
+    Write-Host $header
+
+    # Print rows
+    foreach ($row in $dataTable.Rows) {
+        $rowValues = $row.ItemArray -join "`t"
+        Write-Host $rowValues
+    }
+}
 
 
 
