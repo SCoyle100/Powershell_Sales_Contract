@@ -206,7 +206,17 @@ class WordAutomation {
         }
     }
 
-    [void] FormatCoverPage([array]$specificCells, [array]$stateAbbreviations) {
+    [void] FormatCoverPage() {
+
+        $specificCells = @(
+        [Tuple]::Create(2,1), [Tuple]::Create(2,2), 
+        [Tuple]::Create(4,1), [Tuple]::Create(4,2), 
+        [Tuple]::Create(6,1), [Tuple]::Create(6,2), 
+        [Tuple]::Create(8,1), [Tuple]::Create(8,2)
+        )
+
+        $stateAbbreviations = @("AL", "AK", "AZ", "AR", "CA", "CO", "CT", "DE", "FL", "GA", "HI", "ID", "IL", "IN", "IA", "KS", "KY", "LA", "ME", "MD", "MA", "MI", "MN", "MS", "MO", "MT", "NE", "NV", "NH", "NJ", "NM", "NY", "NC", "ND", "OH", "OK", "OR", "PA", "RI", "SC", "SD", "TN", "TX", "UT", "VT", "VA", "WA", "WV", "WI", "WY", "USA", "US", "NW", "NE", "SW", "SE", "LLC")
+        
         $wordTable = $this.TemplateDoc.Tables[1]
         foreach ($row in $wordTable.Rows) {
             foreach ($cell in $row.Cells) {
